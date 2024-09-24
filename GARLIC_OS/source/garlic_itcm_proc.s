@@ -81,9 +81,30 @@ _gp_rsiVBL:
 	ldr r4, =_gd_nReady			@; cargar direccion mem num RDY
 	ldr r5, [r4]				@; obtener su valor
 	cmp r5, #0					@; comprobar si es 0
-	beq .LendVBL		@; si lo es, acabar multiplexacion
-						@; si no, continuar la multiplexacion
-	
+	beq .LendVBL			@; si lo es, acabar multiplexacion
+							@; si no, continuar la multiplexacion
+	@; Fin detectar si quedan procesos en la cola RDY
+
+	@; Comprobar proceso actual para salvar y/o restaurar contextos
+	ldr r4, =_gd_pidz			@; cargar direccion del proceso actual
+	ldr r5, [r4]				@; obtener su valor
+	cmp r5, #0					@; comprobar si es el SO
+	moveq r7, #1			@; si lo es, guardar un 1 en R7 para luego decidir guardar el contexto
+	beq .LcontextChange		@; y saltar a cambio de contexto
+							@; si no, comprobar si ha acabado
+	mov r5, r5, lsr #4			@; desplazar _gd_pidz 4 bits a la derecha para eliminar bits de zocalo
+	cmp r5, #0					@; comprobar si PID = 0
+	moveq r7, #2			@; si lo es, guardar un 2 en R7 para luego decidir restaurar el siguiente contexto
+	beq .LcontextChange		@; y saltar a cambio de contexto
+	mov r7, #1				@; si no lo es, guardar contexto primero
+
+	.LcontextChange:
+		ldr r4, =_gd_nReady
+		ldr r5, [r4]
+		ldr r6, =_gd_pidz
+		cmp r7, #1
+		bleq _gp_salvarProc
+		blhi _gp_restaurarProc
 
 	.LendVBL:
 
