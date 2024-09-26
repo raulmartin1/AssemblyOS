@@ -81,32 +81,34 @@ _gp_rsiVBL:
 	ldr r4, =_gd_nReady			@; cargar direccion mem num RDY
 	ldr r5, [r4]				@; obtener su valor
 	cmp r5, #0					@; comprobar si es 0
-	beq .LendVBL			@; si lo es, acabar multiplexacion
-							@; si no, continuar la multiplexacion
+	beq .LendVBL				@; si lo es, acabar multiplexacion
+								@; si no, continuar la multiplexacion
 	@; Fin detectar si quedan procesos en la cola RDY
 
 	@; Comprobar proceso actual para salvar y/o restaurar contextos
 	ldr r4, =_gd_pidz			@; cargar direccion del proceso actual
 	ldr r5, [r4]				@; obtener su valor
 	cmp r5, #0					@; comprobar si es el SO
-	moveq r7, #1			@; si lo es, guardar un 1 en R7 para luego decidir guardar el contexto
-	beq .LcontextChange		@; y saltar a cambio de contexto
-							@; si no, comprobar si ha acabado
+	moveq r7, #1				@; si lo es, guardar un 1 en R7 para luego decidir guardar el contexto
+	beq .LcontextChange			@; y saltar a cambio de contexto
+								@; si no, comprobar si ha acabado
 	mov r5, r5, lsr #4			@; desplazar _gd_pidz 4 bits a la derecha para eliminar bits de zocalo
 	cmp r5, #0					@; comprobar si PID = 0
-	moveq r7, #2			@; si lo es, guardar un 2 en R7 para luego decidir restaurar el siguiente contexto
-	beq .LcontextChange		@; y saltar a cambio de contexto
-	mov r7, #1				@; si no lo es, guardar contexto primero
+	moveq r7, #2				@; si lo es, guardar un 2 en R7 para luego decidir restaurar el siguiente contexto
+	beq .LcontextChange			@; y saltar a cambio de contexto
+	mov r7, #1					@; si no lo es, guardar contexto primero
 
-	.LcontextChange:
-		ldr r4, =_gd_nReady
-		ldr r5, [r4]
-		ldr r6, =_gd_pidz
-		cmp r7, #1
-		bleq _gp_salvarProc
-		blhi _gp_restaurarProc
+.LcontextChange:
 
-	.LendVBL:
+	ldr r4, =_gd_nReady		@; guardar valores necesarios en los registros
+	ldr r5, [r4]			@; antes de saltar al cambio de contexto
+	ldr r6, =_gd_pidz
+	cmp r7, #1				@; comprobar si hay que guardar el contexto o no
+	bleq _gp_salvarProc		@; si R7=1, saltar a salvar el contexto
+	blhi _gp_restaurarProc	@; si no, directamente restaurar el siguiente
+	@; Fin comprobar proceso para salvar y/o restaurar contexto
+
+.LendVBL:
 
 	pop {r4-r7, pc}
 
@@ -144,6 +146,9 @@ _gp_restaurarProc:
 _gp_numProc:
 	push {lr}
 
+	ldr r0, =_gd_nReady
+	ldr r0, [r0]
+	add r0, #1
 
 	pop {pc}
 
@@ -159,10 +164,92 @@ _gp_numProc:
 	@;Resultado
 	@; R0: 0 si no hay problema, >0 si no se puede crear el proceso
 _gp_crearProc:
-	push {lr}
+	push {r4-r7, lr}
 
+	@; Inicio comprobacion zocalo
+	cmp r1, #0				@; comprobar si el zocalo es el del SO
+	moveq r0, #1			@; si lo es, devolver R0 > 0
+	beq .LbadProcess		@; y saltar al final sin crear proceso
+	@; Fin comprobacion zocalo
 
-	pop {pc}
+	@; Inicio comprobacion PCB
+	ldr r4, =_gd_pcbs		@; si no, cargar dir. base de los PCBs
+	mov r5, #24				@; tamaño de un PCB
+	mla r4, r5, r1, r4		@; obtener direccion del PCB del zocalo indicado (dir. base + tamaño PCB * zocalo)
+	ldr r5, [r4]			@; cargar PID del PCB obtenido
+	cmp r5, #0				@; comprobar si esta libre (PID = 0)
+	movne r0, #1			@; si no lo esta, devolver R0 > 0
+	bne .LbadProcess		@; y saltar al final sin crear proceso
+	@; Fin comprobacion PCB
+
+	@; Inicio creacion del proceso
+		@; Guardar PID
+	ldr r5, =_gd_pidCount	@; cargar direccion del contador de PIDs
+	ldr r6, [r5]			@; obtener su valor
+	add r6, #1				@; incrementarlo en 1
+	str r6, [r5]			@; actualizar el valor en la variable
+	str r6, [r4]			@; y guardarlo tambien en el PCB
+
+		@; Guardar PC
+	add r5, r0, #4			@; sumar 4 a la direccion de la rutina inicial para compensar el decremento del exception handler
+	str r5, [r4, #4]		@; y guardarlo en el campo PC del PCB (offset 4 bytes de la direccion base)
+
+		@; Guardar keyName (4 chars se pueden guardar de golpe con str)
+	ldr r5, [r2]			@; obtener los cuatro caracteres del keyName
+	str r5, [r4, #16]		@; y guardarlos todos en el campo keyName del PCB (offset 16 bytes)
+
+		@; calcular direccion base de la pila del proceso
+	ldr r5, =_gd_stacks		@; obtener direccion base del vector de pilas
+	add r5, r1, lsl #9		@; obtener direccion base de la pila del zocalo deseado
+							@; teniendo en cuenta que la primera pila del vector es la del zocalo 1
+							@; y que cada pila ocupa 512 bytes (2^9)
+		
+		@; guardar valores iniciales en la pila del proceso
+	ldr r6, =_gp_terminarProc	@; obtener direccion de la funcion _gp_terminarProc
+	sub r5, #4				@; restar una posicion de pila para empezar a apilar con str
+							@; (puntero indica el ultimo elemento apilado, no la siguiente posicion libre)
+	str r6, [r5]			@; y guardar direccion de retorno del proceso (R14)
+	mov r6, #0				@; movemos un 0 para guardarlo en la pila multiples veces
+	mov r7, #12				@; guardar el 0 para los registros R12-R1 (12 registros)
+
+.Lsave_regs:
+	cmp r7, #0				@; comprobamos si el contador esta a 0
+	beq .Lend_save_regs		@; si lo esta, ya hemos guardado todos los registros que son 0, si no:
+	sub r5, #4				@; siguiente posicion de la pila
+	str r6, [r5]			@; guardamos el 0
+	sub r7, #1				@; decrementamos contador
+	b .Lsave_regs			@; repetimos bucle
+.Lend_save_regs:
+
+	sub r5, #4				@; siguiente posicion de la pila
+	str r3, [r5]			@; guardar argumento en la pila (R0)
+
+		@; Guardar SP de la pila del proceso en el PCB
+	str r5, [r4, #8]		@; guardar R5(SP) a la posicion SP del PCB (offset 8 bytes)
+
+		@; Guardar el CPSR inicial del proceso
+	mov r5, #0x1F			@; poner a 1 los bits del CPSR para moso SYS (resto de bits a 0)
+	str r5, [r4, #12]		@; guardar el CPSR en el campo Status del PCB (offset 12 bytes)
+
+		@; Inicializar campo workTicks
+	str r6, [r4, #20]		@; guardar 0 en el campo workTicks del PCB (offset 20 bytes)
+	@; Fin creacion del proceso
+
+	@; Inicio añadir nuevo proceso a la cola RDY
+	ldr r4, =_gd_qReady		@; cargar direccion de la cola RDY
+	ldr r5, =_gd_nReady		@; cargar direccion de la variable nReady
+	ldr r6, [r5]			@; obtener valor de la variable nReady
+	strb r1, [r4, r6]		@; guardar numero de zocalo en la ultima posicion de la cola
+	add r6, #1				@; incrementamos numero de procesos en la cola RDY en 1
+	str r6, [r5]			@; y lo guardamos en la variable _gd_nReady
+	@; Fin añadir nuevo proceso a la cola RDY
+
+.LbadProcess:
+
+	cmp r0, #1				@; comprobamos si R0 = 1, lo que significa que no se ha podido crear el proceso
+	movne r0, #0			@; si no lo es, guardamos un 0 en R0 para indicar que el proceso se ha creado correctamente
+
+	pop {r4-r7, pc}
 
 
 	@; Rutina para terminar un proceso de usuario:
