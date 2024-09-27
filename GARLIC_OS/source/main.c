@@ -2,17 +2,17 @@
 
 	"main.c" : fase 1 / programador P
 
-	Programa de prueba de creaci�n y multiplexaci�n de procesos en GARLIC 1.0,
+	Programa de prueba de creacion y multiplexacion de procesos en GARLIC 1.0,
 	pero sin cargar procesos en memoria ni utilizar llamadas a _gg_escribir().
 
 ------------------------------------------------------------------------------*/
 #include <nds.h>
 #include <stdio.h>
 
-#include "garlic_system.h"	// definici�n de funciones y variables de sistema
+#include "garlic_system.h"	// definicion de funciones y variables de sistema
 
-#include <GARLIC_API.h>		// inclusi�n del API para simular un proceso
-int hola(int);				// funci�n que simula la ejecuci�n del proceso
+#include <GARLIC_API.h>		// inclusion del API para simular un proceso
+int hola(int);				// funcion que simula la ejecucion del proceso
 
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
@@ -22,9 +22,9 @@ extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 void inicializarSistema() {
 //------------------------------------------------------------------------------
 
-	consoleDemoInit();		// inicializar consola, solo para esta simulaci�n
+	consoleDemoInit();		// inicializar consola, solo para esta simulacion
 	
-	_gd_seed = *punixTime;	// inicializar semilla para n�meros aleatorios con
+	_gd_seed = *punixTime;	// inicializar semilla para numeros aleatorios con
 	_gd_seed <<= 16;		// el valor de tiempo real UNIX, desplazado 16 bits
 	
 	irqInitHandler(_gp_IntrMain);	// instalar rutina principal interrupciones
@@ -74,18 +74,18 @@ int hola(int arg) {
 //------------------------------------------------------------------------------
 	unsigned int i, j, iter;
 	
-	if (arg < 0) arg = 0;			// limitar valor m�ximo y 
-	else if (arg > 3) arg = 3;		// valor m�nimo del argumento
+	if (arg < 0) arg = 0;			// limitar valor maximo y 
+	else if (arg > 3) arg = 3;		// valor minimo del argumento
 	
 									// esccribir mensaje inicial
 	GARLIC_printf("-- Programa HOLA  -  PID (%d) --\n", GARLIC_pid());
 	
-	j = 1;							// j = c�lculo de 10 elevado a arg
+	j = 1;							// j = calculo de 10 elevado a arg
 	for (i = 0; i < arg; i++)
 		j *= 10;
-						// c�lculo aleatorio del n�mero de iteraciones 'iter'
+						// calculo aleatorio del numero de iteraciones 'iter'
 	GARLIC_divmod(GARLIC_random(), j, &i, &iter);
-	iter++;							// asegurar que hay al menos una iteraci�n
+	iter++;							// asegurar que hay al menos una iteracion
 	
 	for (i = 0; i < iter; i++)		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
