@@ -126,7 +126,7 @@ _gp_salvarProc:
 
 	@; Guardar zocalo del proceso a la cola de RDY
 	ldr r8, [r6]			@; obtener valor de _gd_pidz
-	and r8, 0xF				@; quedarse con los 4 bits bajos (zocalo)
+	and r8, #0xF			@; quedarse con los 4 bits bajos (zocalo)
 	ldr r9, =_gd_qReady		@; cargar direccion de la cola de RDY
 	strb r8, [r9, r5]		@; guardar zocalo en la cola RDY
 	@; Fin guardar zocalo en la cola RDY
@@ -143,17 +143,17 @@ _gp_salvarProc:
 	mla r9, r8, r10, r9		@; calcular direccion base del PCB segun el zocalo (dir. base + tamaño PCB * zocalo)
 	ldr r10, [r13, #60]		@; obtener PC del proceso a desbancar (valor mas bajo de la pila IRQ)
 							@; (segun la estructura propuesta, el valor es el SP_irq + 60)
-	str r10, [r8, #4]		@; y guardarlo en la posicion correcta del PCB
+	str r10, [r9, #4]		@; y guardarlo en la posicion correcta del PCB
 
 		@; Guardar CPSR del proceso al PCB
-	mrs r9, spsr			@; obtener valor del CPSR del proceso a desbancar (almacenado en el SPSR del modo IRQ)
-	str r9, [r8, #12]		@; y guardarlo en el PCB
+	mrs r8, spsr			@; obtener valor del CPSR del proceso a desbancar (almacenado en el SPSR del modo IRQ)
+	str r8, [r9, #12]		@; y guardarlo en el PCB
 
 		@; Cambiar al modo de ejecucion del proceso interrumpido
-	and r9, #0x1F			@; quedarse con los bits de modo del proceso a desbancar
-	mrs r10, cpsr			@; obtener CPSR_irq para mantener los demas bits iguales
-	bic r10, #0x1F			@; eliminar bits de modo del CPSR_irq obtenido
-	orr r9, r10				@; juntar los demas bits del modo IRQ con los bits de modo del proceso a desbancar
+	and r8, #0x1F			@; quedarse con los bits de modo del proceso a desbancar
+	mrs r9, cpsr			@; obtener CPSR_irq para mantener los demas bits iguales
+	bic r9, #0x1F			@; eliminar bits de modo del CPSR_irq obtenido
+	orr r9, r8				@; juntar los demas bits del CPSR_irq con los bits de modo del proceso a desbancar
 	mov r8, r13 			@; guardamos temporalmente el SP del modo IRQ
 	msr cpsr, r9			@; y guardamos el nuevo modo en el cpsr para cambiar al modo del proceso a desbancar
 
@@ -209,6 +209,88 @@ _gp_salvarProc:
 _gp_restaurarProc:
 	push {r8-r11, lr}
 
+	@; Obtener zocalo del siguiente proceso a poner en RUN
+	ldr r8, =_gd_qReady		@; cargar direccion de la cola de RDY
+	ldrb r9, [r8]			@; y obtenemos el primer proceso (zocalo)
+	
+	@; Cola RDY -1 proceso
+	sub r5, #1				@; restamos 1 al numero de procesos en cola RDY
+	str r5, [r4]			@; guardar nuevo num. procesos RDY en memoria
+
+	@; Desplazar el resto de procesos de la cola una posicion hacia adelante
+.Lshift_rdy:
+	cmp r5, #0				@; comprobamos si aun quedan procesos en la cola
+	beq .Lend_shift			@; si ya no quedan, no hacer nada
+	ldrb r11, [r8, #1]		@; en caso que si, cargamos direccion del segundo elemento de la cola (primero esta "vacio")
+	strb r11, [r8]			@; y lo guardamos en el primero
+	add r8, #1				@; avanzamos al siguiente elemento
+	sub r5, #1				@; restamos 1 al contador de procesos RDY
+	b .Lshift_rdy			@; y repetimos bucle
+.Lend_shift:
+	ldr r5, [r4]			@; restaurar el contenido de R5 (ya que no se guarda con push y podria ocasionar problemas)
+	@; Fin desplazar procesos de qReady hacia delante una posicion
+
+	@; Obtener PID de la estructura garlicPCB
+	ldr r8, =_gd_pcbs		@; cargamos la direccion de garlicPCB
+	mov r10, #24			@; movemos el tamaño de cada estructura en el vector
+	mla r8, r9, r10, r8		@; nos desplazamos al elemento del zocalo que nos interesa
+	ldr r10, [r8]			@; y cargamos el valor del primer campo (PID)
+
+	@; Inicio restaurar contenido del PCB y de la pila del proceso a la pila IRQ
+		@; Guardar PID y zocalo en _gd_pidz
+	mov r10, r10, lsl #4	@; desplazamos pid a los 28 bits altos
+	orr r10, r9				@; y añadimos el zocalo en los 4 bits bajos
+	str r10, [r6]			@; y guardamos el nuevo identificador
+
+		@; Restaurar PC
+	ldr r9, [r8, #4]		@; obtenemos R15(PC) de garlicPCB
+	str r9, [r13, #60]		@; y lo guardamos en su posicion en la pila del modo IRQ
+
+		@; Recuperar CPSR del proceso a restaurar
+	ldr r9, [r8, #12]		@; obtener CPSR del PCB del proceso
+	msr spsr, r9			@; y lo guardamos en el SPSR_irq
+
+		@; Cambiar al modo de ejecucion del proceso a restaurar
+	and r9, #0x1F			@; quedarse con los bits de modo del proceso a restaurar
+	mrs r10, cpsr			@; obtener CPSR_irq para mantener los demas bits iguales
+	bic r10, #0x1F			@; eliminar bits de modo del CPSR_irq obtenido
+	orr r9, r10				@; juntar los demas bits del CPSR_irq con los bits de modo del proceso a restaurar
+	mov r11, r13			@; guardamos temporalmente el SP del modo IRQ
+	msr cpsr, r9			@; y guardamos el nuevo modo en el CPSR para cambiar al modo del proceso a desbancar
+
+		@; Inicio desapilar registros del modo del proceso al modo IRQ
+	ldr r13, [r8, #8]		@; cargar el SP guardado en el PCB en el SP del modo del proceso
+
+	ldmia r13!, {r8-r10}	@; desapilamos R0-R2 en R8-R10 respectivamente
+	add r11, #48			@; vamos a la posicion de R2 en la pila
+	stmda r11, {r8-r10}		@; y guardamos los registros
+
+	ldmia r13!, {r8-r10}	@; desapilamos R3-R5
+	str r8, [r11, #4]		@; guardamos R3
+	sub r11, #24			@; vamos a la posicion de R5
+	stmda r11, {r9, r10}	@; guardamos R4 y R5
+
+	ldmia r13!, {r8-r10}	@; desapilamos R6-R8
+	add r11, #8				@; vamos a la posicion de R7
+	stmda r11, {r8, r9}		@; guardamos R6 y R7
+	sub r11, #32			@; vamos a la posicion de R8
+	str r10, [r11]			@; guardamos R8
+
+	ldmia r13!, {r8-r10}	@; desapilamos R9-R11
+	add r11, #12			@; vamos a la posicion de R11
+	stmda r11, {r8-r10}		@; guardamos registros
+
+	ldmia r13!, {r8, lr}	@; desapilamos R12, y R14 directamente en el LR
+	add r11, #44			@; vamos a la posicion de R12
+	str r8, [r11]			@; guardamos R12
+		@; Fin desapilar registros del modo del proceso al modo IRQ
+
+		@; Volver a modo IRQ
+	mrs r8, cpsr			@; obtenemos CPSR actual
+	bic r8, #0x1F			@; ponemos a 0 los bits de modo
+	orr r8, #0x12			@; los cambiamos al modo IRQ
+	msr cpsr, r8			@; y guardamos nuevo modo
+	@; Fin restaurar contenido del PCB y de la pila del proceso a la pila IRQ
 
 	pop {r8-r11, pc}
 
