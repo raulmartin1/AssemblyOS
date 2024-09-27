@@ -299,13 +299,14 @@ _gp_restaurarProc:
 	@;Resultado
 	@; R0: numero de procesos total
 _gp_numProc:
-	push {lr}
+	push {r1-r2, lr}
 
-	ldr r0, =_gd_nReady
-	ldr r0, [r0]
-	add r0, #1
+	mov r0, #1				@; contar siempre 1 proceso en RUN
+	ldr r1, =_gd_nReady
+	ldr r2, [r1]			@; R2 = numero de procesos en cola de READY
+	add r0, r2				@; añadir procesos en READY
 
-	pop {pc}
+	pop {r1-r2, pc}
 
 
 	.global _gp_crearProc
