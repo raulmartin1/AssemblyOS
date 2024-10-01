@@ -14,6 +14,8 @@
 #include <GARLIC_API.h>		// inclusion del API para simular un proceso
 int hola(int);				// funcion que simula la ejecucion del proceso
 
+int pres(int);				// funcion que simula la ejecucion del proceso (programa de usuario)
+
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
 
@@ -49,8 +51,8 @@ int main(int argc, char **argv) {
 	printf("********************************");
 	printf("*** Inicio fase 1_P\n");
 	
-	_gp_crearProc(hola, 7, "HOLA", 1);
-	_gp_crearProc(hola, 14, "HOLA", 2);
+	_gp_crearProc(hola, 7, "HOLA", 2);
+	_gp_crearProc(pres, 14, "PRES", 2);
 
 	while (_gp_numProc() > 1)
 	{
@@ -89,6 +91,58 @@ int hola(int arg) {
 	
 	for (i = 0; i < iter; i++)		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
+
+	return 0;
+}
+
+int pres(int arg) {
+
+	unsigned int prestamo, cuotas, precio, mod, temp;
+
+	//comprobar que argumento tiene un valor correcto
+	if(arg < 0) arg = 0;
+	else if(arg > 3) arg = 3;
+
+	//titulo proceso
+	GARLIC_printf("-- Programa PRES  -  PID (%d) --\n", GARLIC_pid());
+
+	//informacion inicial
+	GARLIC_printf("(%d)\tPrestamo calculado aleatorio\n\tvalor entre 1000\n\ty %d\n", GARLIC_pid(), (arg+1)*10000);
+	GARLIC_printf("(%d)\tCuotas calculadas aleatorias\n\tvalor entre 4 y 63\n", GARLIC_pid());
+
+	prestamo = GARLIC_random() & (arg+1)*10000;		//limitar prestamo al maximo calculado
+	prestamo |= 1000;		//asegurar que es de almenos 1000 euros
+
+	//mostramos cual es el valor del prestamo aleatorio
+	GARLIC_printf("(%d)\tValor pres.: %d euros.\n", GARLIC_pid(), prestamo);
+
+	cuotas = (GARLIC_random() & 0x3F) | 0xC;	//limitar cuotas entre 12 y 63 (5 años aprox.)
+
+	//mostramos el numero de cuotas aleatorias en las que hay que pagar el prestamo
+	GARLIC_printf("(%d)\tCuotas a pagar: %d\n", GARLIC_pid(), cuotas);
+
+	GARLIC_printf("(%d)\tCalculamos valor prestamo\n\ten centimos, entre cuotas\n\ty obtenemos valor cuotas\n\ten centimos, con un error\n\tde menos de 1 centimo\n\ten cada cuota.\n", GARLIC_pid());
+	GARLIC_divmod(prestamo*100, cuotas, &temp, &mod);		//calcular valor mensual de cada cuota (en centimos)
+
+	//mostrar el valor de las cuotas en centimos
+	GARLIC_printf("(%d)\tValor cuotas en centimos:\n\t%d\n", GARLIC_pid(), temp);
+
+	GARLIC_divmod(temp, 100, &precio, &mod);		//calcular valor mensual de cada cuota (en euros); mod = parte decimal de la cuota
+
+	//mostrar cada parte de la cuota individualmente
+	GARLIC_printf("(%d)\tValor en euros: %d\n", GARLIC_pid(), precio);
+	GARLIC_printf("(%d)\tParte decimal: %d\n", GARLIC_pid(), mod);
+
+	GARLIC_printf("(%d)\tSi la parte decimal\n\tno es multiplo de 10,\n\tse suma 1 a los centimos\n\tpara que el banco\n\tno pierda dinero.\n", GARLIC_pid());
+	GARLIC_divmod(mod, 10, &prestamo, &temp);		//comprobar si mod acaba en 0 (es decir, si faltara ningun centimo en el pago total)
+	if(temp != 0) mod++;		//si no lo es, sumamos 1 a los centimos para que el banco no pierda dinero
+
+	//coste mensual final
+	GARLIC_printf("\tCoste mensual: %d,%d euros.\n", precio, mod);		//mostramos por pantalla el pago mensual que se debera hacer
+
+	//calcular de nuevo el precio con el ajuste de centimos y mostrar el coste total final
+	GARLIC_divmod((precio*100+mod)*cuotas, 100, &precio, &mod);
+	GARLIC_printf("\tCoste total: %d,%d euros.\n", precio, mod);
 
 	return 0;
 }
