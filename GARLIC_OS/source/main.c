@@ -16,9 +16,6 @@ int hola(int);				// funcion que simula la ejecucion del proceso
 
 int pres(int);				// funcion que simula la ejecucion del proceso (programa de usuario)
 
-int GARLIC_wait(unsigned char);
-int GARLIC_signal(unsigned char);
-
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
 
@@ -88,8 +85,6 @@ int hola(int arg) {
 	
 									// esccribir mensaje inicial
 	GARLIC_printf("-- Programa HOLA  -  PID (%d) --\n", GARLIC_pid());
-
-	GARLIC_wait(0);	// bloquear el proceso usando el _gd_mutex[0]
 	
 	j = 1;							// j = calculo de 10 elevado a arg
 	for (i = 0; i < arg; i++)
@@ -100,6 +95,8 @@ int hola(int arg) {
 	
 	for (i = 0; i < iter; i++)		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
+
+	GARLIC_signal(0);	// desbloquear proceso en _gd_mutex[0]
 
 	return 0;
 }
@@ -115,6 +112,8 @@ int pres(int arg) {
 
 	//titulo proceso
 	GARLIC_printf("-- Programa PRES  -  PID (%d) --\n", GARLIC_pid());
+
+	GARLIC_wait(0);	// bloquear el proceso usando el _gd_mutex[0]
 
 	//informacion inicial
 	GARLIC_printf("(%d)\tPrestamo calculado aleatorio\n\tvalor entre 1000\n\ty %d\n", GARLIC_pid(), (arg+1)*10000);
@@ -154,37 +153,5 @@ int pres(int arg) {
 	GARLIC_divmod((precio*100+mod)*cuotas, 100, &precio, &mod);
 	GARLIC_printf("\tCoste total: %d,%d euros.\n", precio, mod);
 
-	GARLIC_signal(0);	// desbloquear proceso en _gd_mutex[0]
-
 	return 0;
-}
-
-int GARLIC_wait(unsigned char mutex) {
-
-	GARLIC_printf("Entrada en funcion GARLIC_wait()\n");
-
-	if(_gd_mutex[mutex]) {	// si el mutex indicado esta libre
-		_gd_mutex[mutex] = 0;
-
-		while(!_gd_mutex[mutex]) {
-			_gp_WaitForVBlank();
-		}
-
-		return 1;
-	
-	} else {	// si el mutex indicado no esta libre
-		return 0;
-	}
-}
-
-int GARLIC_signal(unsigned char mutex) {
-
-	GARLIC_printf("Hecho GARLIC_signal()\n");
-
-	if(_gd_mutex[mutex]) {	// si el mutex indicado esta libre
-		return 0;
-	} else {	// si el mutex indicado esta bloqueando un proceso
-		_gd_mutex[mutex] = 1;
-		return 1;
-	}
 }
