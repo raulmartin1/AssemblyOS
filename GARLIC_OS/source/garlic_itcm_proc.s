@@ -324,7 +324,7 @@ _gp_crearProc:
 
 	@; Inicio comprobacion zocalo
 	cmp r1, #0				@; comprobar si el zocalo es el del SO
-	moveq r0, #1			@; si lo es, devolver R0 > 0
+	moveq r7, #1			@; si lo es, devolver R0 > 0 (comprobando R7 al final)
 	beq .LbadProcess		@; y saltar al final sin crear proceso
 	@; Fin comprobacion zocalo
 
@@ -334,7 +334,7 @@ _gp_crearProc:
 	mla r4, r5, r1, r4		@; obtener direccion del PCB del zocalo indicado (dir. base + tamaño PCB * zocalo)
 	ldr r5, [r4]			@; cargar PID del PCB obtenido
 	cmp r5, #0				@; comprobar si esta libre (PID = 0)
-	movne r0, #1			@; si no lo esta, devolver R0 > 0
+	movne r7, #1			@; si no lo esta, devolver R0 > 0 (comprobando R7 al final)
 	bne .LbadProcess		@; y saltar al final sin crear proceso
 	@; Fin comprobacion PCB
 
@@ -402,8 +402,9 @@ _gp_crearProc:
 
 .LbadProcess:
 
-	cmp r0, #1				@; comprobamos si R0 = 1, lo que significa que no se ha podido crear el proceso
+	cmp r7, #1				@; comprobamos si R7 = 1, lo que significa que no se ha podido crear el proceso
 	movne r0, #0			@; si no lo es, guardamos un 0 en R0 para indicar que el proceso se ha creado correctamente
+	moveq r0, #1			@; si lo es, entonces guardar un 1
 
 	pop {r4-r7, pc}
 

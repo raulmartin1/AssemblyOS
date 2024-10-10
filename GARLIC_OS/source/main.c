@@ -96,7 +96,7 @@ int hola(int arg) {
 	for (i = 0; i < iter; i++)		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
 
-	GARLIC_signal(0);	// desbloquear proceso en _gd_mutex[0]
+	GARLIC_signal(7);	// desbloquear proceso en _gd_mutex[0]
 
 	return 0;
 }
@@ -113,7 +113,7 @@ int pres(int arg) {
 	//titulo proceso
 	GARLIC_printf("-- Programa PRES  -  PID (%d) --\n", GARLIC_pid());
 
-	GARLIC_wait(0);	// bloquear el proceso usando el _gd_mutex[0]
+	GARLIC_wait(7);	// bloquear el proceso usando el _gd_mutex[0]
 
 	//informacion inicial
 	GARLIC_printf("(%d)\tPrestamo calculado aleatorio\n\tvalor entre 1000\n\ty %d\n", GARLIC_pid(), (arg+1)*10000);
@@ -143,7 +143,7 @@ int pres(int arg) {
 	GARLIC_printf("(%d)\tParte decimal: %d\n", GARLIC_pid(), mod);
 
 	GARLIC_printf("(%d)\tSi la parte decimal\n\tno es multiplo de 10,\n\tse suma 1 a los centimos\n\tpara que el banco\n\tno pierda dinero.\n", GARLIC_pid());
-	GARLIC_divmod(mod, 10, &prestamo, &temp);		//comprobar si mod acaba en 0 (es decir, si faltara ningun centimo en el pago total)
+	GARLIC_divmod(mod, 10, &prestamo, &temp);		//comprobar si mod acaba en 0 (es decir, si no faltara ningun centimo en el pago total)
 	if(temp != 0) mod++;		//si no lo es, sumamos 1 a los centimos para que el banco no pierda dinero
 
 	//coste mensual final
