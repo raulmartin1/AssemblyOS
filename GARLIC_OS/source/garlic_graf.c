@@ -26,7 +26,7 @@ int bg2A, bg3A;
 
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por parámetro*/
 void _gg_generarMarco(int v)
-{
+{	
 	int VIzq=96;
 	int HAbajo=97;
 	int VDer=98;
@@ -42,37 +42,47 @@ void _gg_generarMarco(int v)
 	//calcula el desplazamiento vertical en el mapa de caracteres del fondo 3
 	//que se usa para posicionar el marco de la ventana, independientemente
 	//de la ventana que usemos, se colocara el dibujo en la posicion correcta
-	u16* mapPtr = bgGetMapPtr(bg3A) + (baseY*VCOLS);
+	u16* mapPtr = bgGetMapPtr(bg3A) + (baseY*PCOLS);
 	
 	//Marco de Arriba
-	int posicion = baseY * PCOLS;	//posicion ventana
 	for (int col = 1; col < VCOLS; col++) {
-	mapPtr[posicion + baseX + col]=HArriba;
+		mapPtr[baseX + col + (baseY * PCOLS)] = HArriba;
 	}
 	
 	//Marco de Abajo
-	posicion= (baseY + VFILS-1)* PCOLS;
+	int fila = VFILS-1; //fila inferior
 	for (int col = 1; col < VCOLS; col++){
-	mapPtr[posicion + baseX + col]=HAbajo;
+	mapPtr[baseX + col + (fila* PCOLS)] = HAbajo;
 	}
 	
 	//Marco Izquierda y Derecha
-	for(int fila = 0; fila < VFILS; fila++){
+	for(fila = 0; fila < VFILS; fila++){
 		if(fila ==0) { //primera fila
-			posicion = baseY * PCOLS;
-			mapPtr[posicion + baseX]=ArribaIzq;
-			mapPtr[posicion + (baseX + VCOLS - 1)]= ArribaDer;
-		} else if (fila == VFILS -1) { //filas antes de la ultima
-			posicion= (baseY + VFILS - 1) * PCOLS;
-			mapPtr[posicion + baseX]= VIzq;
-			mapPtr[posicion + (baseX + VCOLS - 1)] = VDer;
-		} else {	//ultima fila
-			posicion= (baseY + fila) * PCOLS;
-			mapPtr[posicion + baseX]=AbajoIzq;
-			mapPtr[posicion + (baseX + VCOLS - 1)] = AbajoDer;
+			//Esquinas superiores
+			mapPtr[baseX + (fila* PCOLS)] = ArribaIzq;
+			mapPtr[baseX + (VCOLS-1)+(fila* PCOLS)] = ArribaDer;
+		} else if (fila != VFILS -1) { //filas antes de la ultima
+			mapPtr[baseX + (fila* PCOLS)] = VIzq;
+			mapPtr[baseX + (VCOLS-1) + (fila* PCOLS)] = VDer;
+		} else {  //ultima fila (fila == VFILS-1)
+			//Esquinas inferiores
+			mapPtr[baseX + (fila* PCOLS)] = AbajoIzq;
+			mapPtr[baseX + (VCOLS-1) + (fila* PCOLS)] = AbajoDer;
 		}
 	}
- 
+	
+	if( v == 0 || v == 1 ) { //Si es ventana 0 o 1 (superiores)
+		int filaInf = VFILS -1;	//ultima de las ventanas superiores
+		for (int col = 1; col < VCOLS - 1; col++) {
+			mapPtr[baseX + col + (filaInf * PCOLS)] = HAbajo;	//linea inferior separacion de ventanas
+		}
+	}
+	if( v == 2 || v == 3 ) { //Si es ventana 2 o 3 (inferiores)
+		int filaSup = 0;	//primera fila de las ventanas inferiores
+		for (int col = 1; col < VCOLS - 1; col++) {
+			mapPtr[baseX + col + (filaSup * PCOLS)] = HArriba;	//linea superior separacion de ventanas
+		}
+	}
 }
 
 
@@ -82,9 +92,10 @@ void _gg_iniGrafA()
 	videoSetMode(MODE_5_2D);
 	vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
 	
-	//Calcular ultimos dos valores del bgInit
-	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_512x512, 0, 0);
-	bg3A = bgInit(3, BgType_ExRotation , BgSize_ER_512x512, 0, 0);
+	//Direccio inici mapa = 0x06000000 + (mapBase * 2KB)
+	//Direccion inici de baldosas = 0x06000000 + (tileBase * 16 KB)
+	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_512x512, 10, 3);
+	bg3A = bgInit(3, BgType_ExRotation , BgSize_ER_512x512, 12, 4);
 	
 	bgSetPriority(bg3A,0);
 	bgSetPriority(bg2A,1);
@@ -96,10 +107,10 @@ void _gg_iniGrafA()
 	_gg_generarMarco(i);
 	}
 	
-	bgSetScale(2, 0.5, 0.5);
-	bgSetScale(3, 0.5, 0.5);
-	//bgSetScale(2, 128, 128);
-	//bgSetScale(3, 128, 128);
+	bgSetScale(bg2A, inttof32(0.125), inttof32(0.125));
+	bgSetScale(bg3A, inttof32(0.125), inttof32(0.125));
+	//bgSetScale(bg2A, inttof32(0.5), inttof32(0.5));
+	//bgSetScale(bg3A, inttof32(0.5), inttof32(0.5));
 	
 	bgUpdate();
 }
@@ -255,7 +266,7 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		
 		if(car == '\n' || nChars == VCOLS) {
 		/* _gp_WaitForVBlank: sustituto de swiWaitForVBlank() para Garlic; */
-		_gp_WaitForVBlank();
+		swiWaitForVBlank();
 		if(filaActual==VFILS) {
 		_gg_desplazar(ventana);
 		filaActual--;
