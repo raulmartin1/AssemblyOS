@@ -36,8 +36,9 @@ _gd_wbfs:	.space 4 * (4 + 32)
 	.global _gd_stacks			@; Vector de pilas de los procesos de usuario
 _gd_stacks:	.space 15 * 128 * 4
 
-	.global _gd_mutex			@; Vector de semaforos de tipo mutex
-_gd_mutex: .space 8
+	.global _gd_mutex			@; Vector de semaforos de tipo mutex, inicialmente abiertos (1)
+_gd_mutex:	.word 0x01010101
+			.word 0x01010101
 
 .end
 
