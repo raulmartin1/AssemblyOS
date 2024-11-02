@@ -13,6 +13,9 @@
 #ifndef _GARLIC_SYSTEM_h
 #define _GARLIC_SYSTEM_h
 
+// Variable para indicar la primera posicion de memoria del programa
+extern int _gm_prim_pmem_free; 
+
 
 //------------------------------------------------------------------------------
 //	Variables globales del sistema (garlic_dtcm.s)
