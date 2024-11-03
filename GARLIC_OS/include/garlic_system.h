@@ -11,10 +11,7 @@
 
 ------------------------------------------------------------------------------*/
 #ifndef _GARLIC_SYSTEM_h
-#define _GARLIC_SYSTEM_h
-
-// Variable para indicar la primera posicion de memoria del programa
-extern int _gm_prim_pmem_free; 
+#define _GARLIC_SYSTEM_h 
 
 
 //------------------------------------------------------------------------------

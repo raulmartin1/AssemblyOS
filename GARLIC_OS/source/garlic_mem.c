@@ -11,10 +11,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "garlic_system.h"	// definición de funciones y variables de sistema
+#include "garlic_system.h"				// definición de funciones y variables de sistema
 
-#define INI_MEM 0x01002000		// dirección inicial de memoria para programas
-#define END_MEM 0x01008000		// direccion final de memoria para programas vista en el punto 3.9.2 del manual de la fase 1
+#define INI_MEM 0x01002000				// dirección inicial de memoria para programas
+#define END_MEM 0x01008000				// direccion final de memoria para programas vista en el punto 3.9.2 del manual de la fase 1
+#define EI_NIDENT 16
+
+unsigned int _gm_prim_pmem_free = INI_MEM;       	// Variable para indicar la primera posicion de memoria del programa
 
 typedef unsigned int Elf32_Addr;
 typedef unsigned short Elf32_Half;
@@ -22,7 +25,7 @@ typedef unsigned int Elf32_Off;
 typedef signed int Elf32_Sword;
 typedef unsigned int Elf32_Word;
 
-typedef struct { 				/*Estructura de cada entrada de la taula de segments*/
+typedef struct { 						/*Estructura de cada entrada de la taula de segments*/
 	Elf32_Word p_type; 
 	Elf32_Off p_offset; 
 	Elf32_Addr p_vaddr; 
@@ -33,7 +36,7 @@ typedef struct { 				/*Estructura de cada entrada de la taula de segments*/
 	Elf32_Word p_align; 
 } Elf32_Phdr; 
 
-typedef struct { 							/*Estructura de la capcelera dels archius ELF*/
+typedef struct { 						/*Estructura de la capcelera dels archius ELF*/
 	unsigned char e_ident[EI_NIDENT]; 
 	Elf32_Half  e_type; 
 	Elf32_Half  e_machine; 
@@ -95,7 +98,6 @@ intFunc _gm_cargarPrograma(char *keyName)
 	if (buff == NULL)
 	{
 		printf("No s'ha pogut fer la assignacio de memoria. \n");
-		fclose(ficher);
 		return 0;
 	}
 	
@@ -103,19 +105,12 @@ intFunc _gm_cargarPrograma(char *keyName)
 	if (correcte != midaF)
 	{
 		printf ("Error al copiar el fitxer al buffer. \n");
-		fclose(ficher);
 		return 0;
 	}
 	
 	fseek(ficher, 0, SEEK_SET);								/*Coloquem be el punter al inici del ficher*/
 	Elf32_Ehdr cabecera;
 	fread(&cabecera, 1, sizeof(Elf32_Ehdr), ficher);		/*Llegim la capcelera del ficher ELF*/
-	/*if (cabecera  != sizeof(Elf32_Ehdr))
-	{
-		printf ("Error al leer la cabecera ELF. \n");
-		fclose(ficher);
-		return 0;
-	}*/
 	
 	Elf32_Phdr ent_segments;
 	Elf32_Off offset;
@@ -127,7 +122,6 @@ intFunc _gm_cargarPrograma(char *keyName)
 	n_entradas = cabecera.e_phnum;							/*Guardem el numero de entradas de la taula de segments*/
 	t_entradas = cabecera.e_phentsize;						/*Guardem la mida de cada entrada de la taula de segments*/
 	p_entrada = cabecera.e_entry;							/*Guardem el punt de entrada del programa (direccio on esta la primera instruccio de la rutina _start())*/
-	
 	
 	if (n_entradas != 0)
 	{
@@ -194,5 +188,4 @@ intFunc _gm_cargarPrograma(char *keyName)
 	free(buff);
 	
 	return ((intFunc)dir_entr_prog);	
-	
 }
