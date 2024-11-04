@@ -54,7 +54,7 @@ GARLIC_fopen:
 	push {r4, lr}
 	mov r4, #0
 	mov lr, pc
-	ldr pc, [r4, #20]		@; llamada indirecta a rutina 0x04
+	ldr pc, [r4, #20]		@; llamada indirecta a rutina 0x05
 	pop {r4, pc}
 	
 	.global GARLIC_fread
@@ -62,7 +62,7 @@ GARLIC_fread:
 	push {r4, lr}
 	mov r4, #0
 	mov lr, pc
-	ldr pc, [r4, #24]		@; llamada indirecta a rutina 0x04
+	ldr pc, [r4, #24]		@; llamada indirecta a rutina 0x06
 	pop {r4, pc}
 	
 	.global GARLIC_fclose
@@ -70,7 +70,7 @@ GARLIC_fclose:
 	push {r4, lr}
 	mov r4, #0
 	mov lr, pc
-	ldr pc, [r4, #28]		@; llamada indirecta a rutina 0x04
+	ldr pc, [r4, #28]		@; llamada indirecta a rutina 0x07
 	pop {r4, pc}
 
 	.global GARLIC_wait
@@ -78,7 +78,7 @@ GARLIC_wait:
 	push {r4, lr}
 	mov r4, #0
 	mov lr, pc
-	ldr pc, [r4, #32]		@; llamada indirecta a rutina 0x05
+	ldr pc, [r4, #32]		@; llamada indirecta a rutina 0x08
 	pop {r4, pc}
 
 	.global GARLIC_signal
@@ -86,7 +86,7 @@ GARLIC_signal:
 	push {r4, lr}
 	mov r4, #0
 	mov lr, pc
-	ldr pc, [r4, #36]		@; llamada indirecta a rutina 0x06
+	ldr pc, [r4, #36]		@; llamada indirecta a rutina 0x09
 	pop {r4, pc}
 
 .end

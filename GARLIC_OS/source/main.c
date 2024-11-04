@@ -40,7 +40,11 @@ void inicializarSistema() {
 //------------------------------------------------------------------------------
 int main(int argc, char **argv) {
 //------------------------------------------------------------------------------
-	intFunc start;
+	intFunc hola;
+	intFunc prnt;
+	intFunc open;
+	intFunc mmll;
+
 	inicializarSistema();
 
 	printf("********************************");
@@ -51,74 +55,37 @@ int main(int argc, char **argv) {
 	
 	
 	printf("*** Carga de programa HOLA.elf\n");
-	start = _gm_cargarPrograma("hola");
-	if (start)
-	{
-		printf("*** Direccion de arranque :\n\t\t%p\n", start);
-		printf("*** Pulse tecla \'START\' ::\n\n");
-		do
-		{	swiWaitForVBlank();
-			scanKeys();
-		} while ((keysDown() & KEY_START) == 0);
-		
-		start(1);		// llamada al proceso HOLA con argumento 1
-	}
-	else
-		printf("*** Programa \"HOLA\" NO cargado\n");
+	hola = _gm_cargarPrograma("HOLA");
+			
+	printf("\n*** Carga de programa PRNT.elf\n");
+	prnt = _gm_cargarPrograma("PRNT");
+			
+	printf("\n*** Carga de programa OPEN.elf\n");
+	open = _gm_cargarPrograma("OPEN");
+			
+	printf("\n*** Carga de programa MMLL.elf\n");
+	mmll = _gm_cargarPrograma("MMLL");
 
-	printf("\n\n\n*** Carga de programa PRNT.elf\n");
-	start = _gm_cargarPrograma("prnt");
-	if (start)
-	{
-		printf("*** Direccion de arranque :\n\t\t%p\n", start);
-		printf("*** Pulse tecla \'START\' ::\n\n");
-		do
-		{	swiWaitForVBlank();
-			scanKeys();
-		} while ((keysDown() & KEY_START) == 0);
-		
-		start(1);		// llamada al proceso PRNT con argumento 1
-	}
-	else
-		printf("*** Programa \"PRNT\" NO cargado\n");
-		
-	printf("\n\n\n*** Carga de programa OPEN.elf\n");
-	start = _gm_cargarPrograma("open");
-	if (start)
-	{
-		printf("*** Direccion de arranque :\n\t\t%p\n", start);
-		printf("*** Pulse tecla \'START\' ::\n\n");
-		do
-		{	swiWaitForVBlank();
-			scanKeys();
-		} while ((keysDown() & KEY_START) == 0);
-		
-		start(0);		// llamada al proceso OPEN con argumento 1
-	}
-	else
-		printf("*** Programa \"OPEN\" NO cargado\n");
-		
-	printf("\n\n\n*** Carga de programa MMLL.elf\n");
-	start = _gm_cargarPrograma("mmll");
-	if (start)
-	{
-		printf("*** Direccion de arranque :\n\t\t%p\n", start);
-		printf("*** Pulse tecla \'START\' ::\n\n");
-		do
-		{	swiWaitForVBlank();
-			scanKeys();
-		} while ((keysDown() & KEY_START) == 0);
-		
-		start(1);		// llamada al proceso MMLL con argumento 1
-	}
-	else
-		printf("*** Programa \"MMLL\" NO cargado\n");
 
-	printf("*** Final fase 1_M\n");
+	
+	_gp_crearProc(hola, 1, "HOLA", 1);
+	_gp_crearProc(prnt, 2, "PRNT", 1);
+	_gp_crearProc(open, 3, "OPEN", 1);
+	_gp_crearProc(mmll, 4, "MMLL", 1);
+
+	
+
+	while(_gp_numProc()>1){
+		printf("***Test Garlic_OS!!!\n");
+		_gp_WaitForVBlank();
+	}
+	
+
+	printf("*** Final fase 1\n");
 
 	while (1)
 	{
-		swiWaitForVBlank();
+		_gp_WaitForVBlank();
 	}							// parar el procesador en un bucle infinito
 	return 0;
 }
