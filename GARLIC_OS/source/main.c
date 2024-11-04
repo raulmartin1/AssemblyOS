@@ -68,16 +68,16 @@ int main(int argc, char **argv) {
 
 
 	
-	_gp_crearProc(hola, 1, "HOLA", 1);
-	_gp_crearProc(prnt, 2, "PRNT", 1);
+	_gp_crearProc(hola, 7, "HOLA", 1);
+	_gp_crearProc(prnt, 14, "PRNT", 1);
 	_gp_crearProc(open, 3, "OPEN", 1);
 	_gp_crearProc(mmll, 4, "MMLL", 1);
 
 	
 
 	while(_gp_numProc()>1){
-		printf("***Test Garlic_OS!!!\n");
 		_gp_WaitForVBlank();
+		printf("***Test Garlic_OS!!!\n");
 	}
 	
 
