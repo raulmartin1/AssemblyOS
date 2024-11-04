@@ -11,9 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "garlic_system.h"				// definición de funciones y variables de sistema
+#include "garlic_system.h"				// definiciï¿½n de funciones y variables de sistema
 
-#define INI_MEM 0x01002000				// dirección inicial de memoria para programas
+#define INI_MEM 0x01002000				// direcciï¿½n inicial de memoria para programas
 #define END_MEM 0x01008000				// direccion final de memoria para programas vista en el punto 3.9.2 del manual de la fase 1
 #define EI_NIDENT 16
 
@@ -55,7 +55,7 @@ typedef struct { 						/*Estructura de la capcelera dels archius ELF*/
 
 
 /* _gm_initFS: inicializa el sistema de ficheros, devolviendo un valor booleano
-					para indiciar si dicha inicialización ha tenido éxito;
+					para indiciar si dicha inicializaciï¿½n ha tenido ï¿½xito;
 */
 int _gm_initFS()
 {
@@ -65,14 +65,14 @@ int _gm_initFS()
 
 /* _gm_cargarPrograma: busca un fichero de nombre "(keyName).elf" dentro del
 					directorio "/Programas/" del sistema de ficheros y carga
-					los segmentos de programa a partir de una posición de
-					memoria libre, efectuando la reubicación de las referencias
-					a los símbolos del programa según el desplazamiento del
-					código en la memoria destino;
-	Parámetros:
+					los segmentos de programa a partir de una posiciï¿½n de
+					memoria libre, efectuando la reubicaciï¿½n de las referencias
+					a los sï¿½mbolos del programa segï¿½n el desplazamiento del
+					cï¿½digo en la memoria destino;
+	Parï¿½metros:
 		keyName ->	string de 4 caracteres con el nombre en clave del programa
 	Resultado:
-		!= 0	->	dirección de inicio del programa (intFunc)
+		!= 0	->	direcciï¿½n de inicio del programa (intFunc)
 		== 0	->	no se ha podido cargar el programa
 */
 intFunc _gm_cargarPrograma(char *keyName)
@@ -97,14 +97,14 @@ intFunc _gm_cargarPrograma(char *keyName)
 	buff = (char*) malloc (sizeof(char)*(midaF+1));			/*Reservem espai a memoria dinamica pel buffer*/
 	if (buff == NULL)
 	{
-		printf("No s'ha pogut fer la assignacio de memoria. \n");
+		_gg_escribir("No s'ha pogut fer la assignacio de memoria. \n", 0, 0, 0);
 		return 0;
 	}
 	
 	correcte = fread(buff, sizeof(char), midaF, ficher);	/*Carguem el ficher al buffer*/
 	if (correcte != midaF)
 	{
-		printf ("Error al copiar el fitxer al buffer. \n");
+		_gg_escribir("Error al copiar el fitxer al buffer. \n", 0, 0, 0);
 		return 0;
 	}
 	
@@ -125,7 +125,7 @@ intFunc _gm_cargarPrograma(char *keyName)
 	
 	if (n_entradas != 0)
 	{
-		fseek(ficher, offset, SEEK_SET);						/*Apuntem al program header del ficher (desplaçament de la taula de segments)*/
+		fseek(ficher, offset, SEEK_SET);						/*Apuntem al program header del ficher (desplaï¿½ament de la taula de segments)*/
 		fread(&ent_segments, 1, sizeof(Elf32_Phdr), ficher);	/*Llegim la taula de segments*/
 	}
 	
@@ -158,7 +158,7 @@ intFunc _gm_cargarPrograma(char *keyName)
 			
 			_gm_reubicar( buff, direccio_fis, (unsigned int *) _gm_prim_pmem_free);
 			
-			/*Mirem que pel següent programa el _gm_prim_pmem_free sigui multiple de 4*/
+			/*Mirem que pel segï¿½ent programa el _gm_prim_pmem_free sigui multiple de 4*/
 			int s = mida_seg%4;
 			if(s!=0){
 				mida_seg = mida_seg + (4-s);
@@ -167,7 +167,7 @@ intFunc _gm_cargarPrograma(char *keyName)
 			/*Guardem la direccio de entrada del programa, la direccio de la primera instruccio a executar*/
 			dir_entr_prog = (int) _gm_prim_pmem_free + p_entrada - direccio_fis;
 			
-			/*Actualitzem _gm_prim_pmem_free per al següent programa*/
+			/*Actualitzem _gm_prim_pmem_free per al segï¿½ent programa*/
 			_gm_prim_pmem_free = _gm_prim_pmem_free + mida_seg; 
 			
 		}

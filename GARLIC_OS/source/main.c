@@ -81,24 +81,25 @@ int main(int argc, char **argv) {
 
 	inicializarSistema();
 
-	_gg_escribir("********************************", 0 ,0 ,0);
-	_gg_escribir("*                              *", 0 ,0 ,0);
-	_gg_escribir("* Sistema Operativo GARLIC 1.0 *", 0 ,0 ,0);
-	_gg_escribir("*                              *", 0 ,0 ,0);
-	_gg_escribir("********************************", 0 ,0 ,0);
+	_gg_escribir("********************************", 0, 0, 0);
+	_gg_escribir("*                              *", 0, 0, 0);
+	_gg_escribir("* Sistema Operativo GARLIC 1.0 *", 0, 0, 0);
+	_gg_escribir("*                              *", 0, 0, 0);
+	_gg_escribir("********************************", 0, 0, 0);
 	_gg_escribir("Inicio Fase 1", 0, 0, 0);
+
+
 	
-	
-	_gg_escribir("*** Carga de programa PRES.elf\n", 0 ,0 ,0);
+	_gg_escribir("*** Carga de programa PRES.elf\n", 0, 0, 0);
 	pres = _gm_cargarPrograma("PRES");
 			
-	_gg_escribir("\n*** Carga de programa PI_1.elf\n", 0 ,0 ,0);
+	_gg_escribir("\n*** Carga de programa PI_1.elf\n", 0, 0, 0);
 	pi_1 = _gm_cargarPrograma("PI_1");
 			
-	_gg_escribir("\n*** Carga de programa MMLL.elf\n", 0 ,0 ,0);
+	_gg_escribir("\n*** Carga de programa MMLL.elf\n", 0, 0, 0);
 	mmll = _gm_cargarPrograma("MMLL");
 
-	_gg_escribir("\n*** Carga de programa OPEN.elf\n", 0 ,0 ,0);
+	_gg_escribir("\n*** Carga de programa OPEN.elf\n", 0, 0, 0);
 	open = _gm_cargarPrograma("OPEN");
 
 	_gg_escribir("Inicio de los procesos.\n", 0, 0, 0);
@@ -108,7 +109,7 @@ int main(int argc, char **argv) {
 	_gp_crearProc(mmll, 3, "MMLL", 2);
 
 	
-	_gg_escribir("El SO se bloqueara hasta que acaben los programas.\n", 0, 0, 0);
+	_gg_escribir("El SO se bloqueara hasta que acabe el programa de usuario PRES.\n", 0, 0, 0);
 	_gp_waitS(0);
 	_gg_escribir("El SO se ha desbloqueado!\n", 0, 0, 0);
 
@@ -120,7 +121,7 @@ int main(int argc, char **argv) {
 	}
 
 
-	_gg_escribir("\x80\x80\x80 Final fase 1 \x80\x80\x80\n", 0 ,0 ,0);
+	_gg_escribir("\x80\x80\x80 Final fase 1 \x80\x80\x80\n", 0, 0, 0);
 
 	while (1)
 	{

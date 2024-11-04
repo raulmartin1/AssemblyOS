@@ -272,8 +272,8 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		*/
 		else if(car == '\n' || nChars == VCOLS) {
 			/* _gp_WaitForVBlank: sustituto de swiWaitForVBlank() para Garlic; */
-			//_gp_WaitForVBlank();
-			swiWaitForVBlank();
+			_gp_WaitForVBlank();
+			
 			if(filaActual==VFILS) {
 				_gg_desplazar(ventana); //despla�ament dels codi de rajola (scroll)
 				filaActual--;
