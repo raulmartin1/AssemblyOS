@@ -53,6 +53,16 @@ extern int GARLIC_divmodL(long long * num, unsigned int * den,
 		(salto de linia). */
 extern void GARLIC_printf(char * format, ...);
 
+typedef unsigned int size_t;
+
+typedef void * G_file;
+
+extern G_file * GARLIC_fopen(const char * filename, const char * mode);
+
+extern int GARLIC_fread(void * buffer, size_t size, size_t numele, G_file * file);
+
+extern int GARLIC_fclose(G_file * file);
+
 
 	/*	GARLIC_wait: modifica el semaforo indicado por parametro
 		para que bloquee el proceso que llama a la funcion. */

@@ -5,7 +5,7 @@
 
 	Analista-programador: santiago.romani@urv.cat
 	Programador P: stefanoctavian.tabirca@estudiants.urv.cat
-	Programador M: yyy.yyy@estudiants.urv.cat
+	Programador M: david.quintana@estudiants.urv.cat
 	Programador G: zzz.zzz@estudiants.urv.cat
 	Programador T: uuu.uuu@estudiants.urv.cat
 
