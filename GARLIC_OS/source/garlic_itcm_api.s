@@ -140,36 +140,11 @@ _ga_printf:
 	@;Resultado
 	@; R0: 1 si se ha bloqueado el proceso, 0 si no lo ha hecho
 _ga_wait:
-	push {r1-r2, lr}
+	push {lr}
 
-	@; Comprobar que el semaforo existe
-	cmp r0, #7				@; comprobamos que el semaforo indicado no pasa de 7 (rango es 0-7)
-	movhi r0, #0			@; si se pasa, mover un 0 a R0
-	bhi .LreturnWait		@; y salir de la rutina indicando que no se ha desbloqueado ningun proceso
+	bl _gp_waitS
 
-	@; Obtener estado del semaforo
-	ldr r1, =_gd_mutex		@; cargar direccion del vector de semaforos
-	ldrb r2, [r1, r0]		@; obtener valor del semaforo indicado por parametro
-
-	@; Comprobar su valor
-	cmp r2, #0				@; comprobar si el semaforo es 0 (bloqueado)
-	moveq r0, #0			@; mover un 0 a R0 para devolverlo como resultado
-	beq .LreturnWait		@; acabar rutina indicando que el semaforo ya estaba bloqueado
-
-	@; Bucle para bloquear proceso hasta que el semaforo se libere
-	mov r2, #0				@; en caso de estar a 1 (libre), mover un 0 en R2
-	strb r2, [r1, r0]		@; y guardarlo en el semaforo indicado por parametro
-.LcheckLoop:
-	ldrb r2, [r1, r0]		@; obtener valor del semaforo nuevamente
-	cmp r2, #0				@; comprobar si sigue a 0 (bloqueado)
-	movhi r0, #1			@; en caso de estar a 1 (libre), mover un 1 en R1
-	bhi .LreturnWait		@; y acabar la rutina indicando que el proceso se ha bloqueado correctamente
-	bl _gp_WaitForVBlank	@; si no, esperar retroceso vertical
-	b .LcheckLoop			@; y volver a iterar el bucle
-
-.LreturnWait:
-
-	pop {r1-r2, pc}
+	pop {pc}
 
 
 .global _ga_signal
@@ -178,30 +153,11 @@ _ga_wait:
 	@;Resultado
 	@; R0: 1 si ha desbloqueado un proceso, 0 si no lo ha hecho
 _ga_signal:
-	push {r1-r2, lr}
+	push {lr}
 
-	@; Comprobar que el semaforo existe
-	cmp r0, #7				@; comprobamos que el semaforo indicado no pasa de 7 (rango es 0-7)
-	movhi r0, #0			@; si se pasa, mover un 0 a R0
-	bhi .LreturnSignal		@; y salir de la rutina indicando que no se ha desbloqueado ningun proceso
+	bl _gp_signalS
 
-	@; Obtener estado del semaforo
-	ldr r1, =_gd_mutex		@; cargar direccion del vector de semaforos
-	ldrb r2, [r1, r0]		@; obtener valor del semaforo indicado por parametro
-
-	@; Comprobar su valor
-	cmp r2, #0				@; comprobar si el semaforo es 0 (bloqueado)
-	movhi r0, #0			@; en caso que no lo sea, mover un 0 a R0
-	bhi .LreturnSignal		@; y salir de la rutina indicando que no se ha desbloqueado ningun proceso
-
-	@; Desbloquear proceso (liberar semaforo)
-	mov r2, #1				@; en caso que si, mover un 1 en R2
-	strb r2, [r1, r0]		@; y guardarlo en el semaforo indicado por parametro
-	mov r0, #1				@; mover un 1 a R0 para indicar que se ha desbloqueado un proceso
-
-.LreturnSignal:
-
-	pop {r1-r2, pc}
+	pop {pc}
 
 .end
 
