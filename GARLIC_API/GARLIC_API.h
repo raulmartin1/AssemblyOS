@@ -72,5 +72,6 @@ extern int GARLIC_wait(unsigned char);
 		para que desbloquee el proceso que lo esta usando. */
 extern int GARLIC_signal(unsigned char);
 
+extern void GARLIC_setChar(unsigned char n, unsigned char * buffer);
 
 #endif // _GARLIC_API_h_

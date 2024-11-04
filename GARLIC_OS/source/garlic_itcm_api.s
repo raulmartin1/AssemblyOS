@@ -154,6 +154,7 @@ _ga_fclose:
 	pop {pc}
 	
 
+
 	.global _ga_wait
 	@;Parametros
 	@; R0: unsigned char mutex
@@ -178,6 +179,20 @@ _ga_signal:
 	bl _gp_signalS
 
 	pop {pc}
+
+
+
+	.global _ga_setChar
+	@;Par�metros
+	@; R0: unsigned char n
+	@; R1: unsigned char * buffer
+_ga_setChar:
+	push {r2-r4 ,lr}
+	ldr r4, =_gd_pidz		@; R4 = direcci�n _gd_pidz
+	ldr r3, [r4]
+	and r3, #0x3			@; R3 = ventana de salida (z�calo actual MOD 4)
+	bl _gg_setChar
+	pop {r2-r4 ,pc}
 
 .end
 

@@ -18,5 +18,6 @@ APIVector:						@; Vector de direcciones de rutinas del API
 	.word	_ga_fclose
 	.word	_ga_wait
 	.word	_ga_signal
+	.word	_ga_setChar
 
 .end
