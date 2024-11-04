@@ -44,5 +44,7 @@ int _start(int arg) {                              /* funcion de inicio : no se 
     GARLIC_printf("Minimo: %x%x\n", min_high, min_low);
     GARLIC_printf("Maximo: %x%x\n", max_high, max_low);
 
+    GARLIC_signal(7);
+
     return 0; // Retornar 0 para indicar que todo ha ido bien
 }

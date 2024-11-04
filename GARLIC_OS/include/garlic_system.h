@@ -108,6 +108,10 @@ extern int _gp_numProc();
 */
 extern int _gp_crearProc(intFunc funcion, int zocalo, char *nombre, int arg);
 
+extern int _gp_waitS(int sem);
+
+extern int _gp_signalS(int sem);
+
 
 
 //------------------------------------------------------------------------------
@@ -176,6 +180,9 @@ extern void _gg_generarMarco(int v);
 */
 extern void _gg_escribir(char *formato, unsigned int val1, unsigned int val2,
 																   int ventana);
+
+
+extern void _gg_setChar(unsigned char n, unsigned char *buffer);
 
 
 //------------------------------------------------------------------------------

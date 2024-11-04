@@ -4,16 +4,9 @@ PROGRAMA PRINCIPAL GARLIC OS
 
 ------------------------------------------------------------------------------*/
 #include <nds.h>
-
 #include "garlic_system.h"	// definicion de funciones y variables de sistema
 
-
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
-
-
-#include <nds.h>
-
-#include "garlic_system.h"	// definici�n de funciones y variables de sistema
 
 unsigned char baldosa[64];
 
@@ -45,9 +38,36 @@ void inicializarSistema() {
 
 	if (!_gm_initFS())
 	{
-		_gg_escribir("ERROR: no se puede inicializar el sistema de ficheros!");
+		_gg_escribir("ERROR: no se puede inicializar el sistema de ficheros!", 0, 0, 0);
 		exit(0);
 	}
+
+	/* Crear baldosa Cara */
+    for (int i = 0; i < 64; i++) {
+        baldosa[i] = 0xFF; // Establecer todo a blanco
+    }
+
+    // Ojos (pintar de negro)
+    baldosa[9] = 0x00;
+    baldosa[10] = 0x00; 
+
+    baldosa[13] = 0x00; 
+    baldosa[14] = 0x00; 
+
+    baldosa[17] = 0x00;
+    baldosa[18] = 0x00; 
+
+    baldosa[21] = 0x00; 
+    baldosa[22] = 0x00; 
+
+    baldosa[41] = 0x00; 
+    baldosa[46] = 0x00;
+    baldosa[50] = 0x00; 
+    baldosa[51] = 0x00;
+    baldosa[52] = 0x00; 
+    baldosa[53] = 0x00;
+
+	_gg_setChar(128, baldosa);
 }
 
 
@@ -57,6 +77,7 @@ int main(int argc, char **argv) {
 	intFunc pres;
 	intFunc pi_1;
 	intFunc mmll;
+	intFunc open;
 
 	inicializarSistema();
 
@@ -77,21 +98,29 @@ int main(int argc, char **argv) {
 	_gg_escribir("\n*** Carga de programa MMLL.elf\n", 0 ,0 ,0);
 	mmll = _gm_cargarPrograma("MMLL");
 
+	_gg_escribir("\n*** Carga de programa OPEN.elf\n", 0 ,0 ,0);
+	open = _gm_cargarPrograma("OPEN");
 
+	_gg_escribir("Inicio de los procesos.\n", 0, 0, 0);
 	
 	_gp_crearProc(pres, 1, "PRES", 2);
 	_gp_crearProc(pi_1, 2, "PI_1", 2);
 	_gp_crearProc(mmll, 3, "MMLL", 2);
 
 	
+	_gg_escribir("El SO se bloqueara hasta que acaben los programas.\n", 0, 0, 0);
+	_gp_waitS(0);
+	_gg_escribir("El SO se ha desbloqueado!\n", 0, 0, 0);
 
-	while(_gp_numProc()>1){
+
+	_gp_crearProc(open, 15, "OPEN", 2);
+
+	while(_gp_numProc() > 1){
 		_gp_WaitForVBlank();
-		_gg_escribir("***Test Garlic_OS!!!\n", 0 ,0 ,0);
 	}
-	
 
-	_gg_escribir("*** Final fase 1\n", 0 ,0 ,0);
+
+	_gg_escribir("\x80\x80\x80 Final fase 1 \x80\x80\x80\n", 0 ,0 ,0);
 
 	while (1)
 	{

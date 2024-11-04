@@ -20,10 +20,10 @@ int _start(int arg)
 	char par[32];
 	int elements;
 	
-	elements = GARLIC_fread (par, 1, 20, f);				//fiquem de sobres
+	elements = GARLIC_fread(par, 1, 20, f);				//fiquem de sobres
 	
 	GARLIC_printf("\nSe han leido %d elementos", elements);
-	GARLIC_printf("\nText que hi ha: %s", par);
+	GARLIC_printf("\nText que hi ha: %s\n", par);
 	GARLIC_fclose(f);
 	
     return 0;

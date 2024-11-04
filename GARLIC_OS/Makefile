@@ -36,7 +36,7 @@ NITRODATA	:=	nitrofiles
 #-------------------------------------------------------------------------------
 ARCH	:=	-march=armv5te -mlittle-endian
 
-CFLAGS	:=	-Wall -g -O0 \
+CFLAGS	:=	-Wall -g -O2 \
 			$(ARCH) -mtune=arm946e-s -fomit-frame-pointer -ffast-math
 				# -Wall						: enable all warnings
 				# -g						: enable debug info generation
@@ -114,7 +114,7 @@ $(BUILD):
 clean:
 	@echo "Removing ALL intermediate files... "
 	@echo "Por favor, recuerda que habitualmente NO es necesario hacer un 'clean' antes de un 'make'"
-#	@sleep 3
+	@sleep 3
 	@rm -fr $(BUILD) $(TARGET).elf $(TARGET).nds
 
 #---------------------------------------------------------------------------------

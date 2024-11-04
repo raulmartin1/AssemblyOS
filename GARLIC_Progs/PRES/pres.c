@@ -38,7 +38,8 @@ int _start(int arg)				/* funci�n de inicio : no se usa 'main' */
 
 	GARLIC_wait(7);	// bloquear el proceso usando el _gd_mutex[7]
 
-	GARLIC_printf("(%d)\tCalculamos valor prestamo en centimos entre cuotas, y obtenemos valor cuotas en centimos, con un error de menos de 1 centimo en cada cuota.\n", GARLIC_pid());
+	GARLIC_printf("(%d)\tCalculamos valor prestamo en centimos entre cuotas, y obtenemos valor", GARLIC_pid());
+	GARLIC_printf(" cuotas en centimos, con un error de menos de 1 centimo en cada cuota.\n");
 	GARLIC_divmod(prestamo*100, cuotas, &temp, &mod);		//calcular valor mensual de cada cuota (en centimos)
 
 	//mostrar el valor de las cuotas en centimos
@@ -63,6 +64,8 @@ int _start(int arg)				/* funci�n de inicio : no se usa 'main' */
 
 	GARLIC_printf("(%d)\tCoste total: %d euros\n", GARLIC_pid(), precio);
 	GARLIC_printf("(%d)\tcon %d centimos.\n", GARLIC_pid(), mod);
+
+	GARLIC_signal(0);
 
 	return 0;
 }
