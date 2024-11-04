@@ -12,10 +12,6 @@
 
 #include <GARLIC_API.h>		// inclusión del API para simular un proceso
 
-#define MAX_DIM 1000000
-
-void MinimMaxim(int arg);
-
 int hola(int);				// función que simula la ejecución del proceso
 extern int prnt(int);		// otra función (externa) de test correspondiente
 							// a un proceso de usuario
@@ -57,7 +53,7 @@ int main(int argc, char **argv) {
 	_gg_escribir("*** Inicio fase 1_G\n", 0, 0, 0);
 	
 	_gd_pidz = 6;	// simular zócalo 6
-	hola(0);
+	PI_1(3);
 	_gd_pidz = 7;	// simular zócalo 7
 	hola(2);
 	_gd_pidz = 5;	// simular zócalo 5
@@ -128,40 +124,47 @@ int hola(int arg) {
 	
 	GARLIC_printf("(%d)\t%d: \x80\n", GARLIC_pid(), i);
 	
-	PI_1(3);
 	return 0;
 }
 
 
 
 int PI_1(int arg){
-	
-	GARLIC_printf("\n-- Programa PI_1  -  PID (%d) --\n", GARLIC_pid());
-	
-	if(arg < 0) {
-		GARLIC_printf("(%d)\tNo se ha podido Calcular Pi\n Indica un argumento positivo\x80\n", GARLIC_pid());
-		return 0;
-	}
-	
-	double pi=0.0;
-	
-	int fracciones=1;					//numero de fracciones
-	for (int i = 0; i < arg; i++) {		// calculo de 2^arg
-	     fracciones *= 2; 
-	 }
-	 
-	for (int i = 0; i<fracciones; i++) { // calculo de la suma de la serie
-	    double fraccion;
-		if(i%2 == 0) fraccion = 1.0 / (2*i+1); 		//si es par, establece como positivo 1/(2i+1)
-		else fraccion = -1.0 / (2*i+1);			// si es impar, establece como negativo -1/(2i+1)
-        pi+=fraccion; 
-    }
-	pi *=4;
-	
-	unsigned long long parte_entera = (unsigned long long)pi; // Parte entera
-    unsigned long long parte_decimal = (unsigned long long)((pi - parte_entera) * 1000000); // 6 primeros digitos del decimal Pi
 
-    GARLIC_printf("PI Calculado es: %d.%d\n", (int)parte_entera, (int)parte_decimal); 
+    GARLIC_printf("\n-- Programa PI_1  -  PID (%d) --\n", GARLIC_pid());
+
+    if (arg < 0) arg = 0;            // limitar valor m?ximo y 
+    else if (arg > 3) arg = 3;        // valor m?nimo del argumento
+
+    unsigned int result, mod;
+
+    unsigned int pi = 0;
+    unsigned int piDecimal = 0;
+
+    // se calcula el numero de fracciones 2^arg
+    int fracciones = 1;
+    for (int i = 0; i < arg; i++) {
+        fracciones *= 2; 
+    }
+
+    // calcula la suma de la serie
+    for (int i = 0; i < fracciones; i++) { 
+        GARLIC_divmod(i, 2, &result, &mod);
+        if (mod == 0) {
+            GARLIC_divmod(1, (2*i+1), &result, &mod);    // si es par, fraccion positiva 1/(2i+1)
+            pi += result;
+            piDecimal += mod;
+        } else {
+            GARLIC_divmod(1, (2*i+1), &result, &mod);    // si es impar, fraccion negativa -1/(2i+1)
+            pi -= result;
+            piDecimal -= mod;
+        }
+
+    }
+    pi*= 4;
+
+    // Mostrar el resultado en formato "entero.decimal"
+    GARLIC_printf("PI Calculado es: %d.%d\n", pi, piDecimal); 
 
     return 0;
 }
