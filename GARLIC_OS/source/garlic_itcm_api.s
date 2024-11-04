@@ -131,7 +131,27 @@ _ga_printf:
 	bl printf				@; llamada de prueba
 	pop {r12}
 	pop {r4, pc}
-
+	
+	.global _ga_fopen
+_ga_fopen:
+	push {lr}
+	bl fer_GARLIC_fopen
+	pop {pc}
+	
+	
+	.global _ga_fread
+_ga_fread:
+	push {lr}
+	bl fer_GARLIC_fread
+	pop {pc}
+	
+	
+	.global _ga_fclose
+_ga_fclose:
+	push {lr}
+	bl fer_GARLIC_fclose
+	pop {pc}
+	
 
 .end
 

@@ -189,3 +189,15 @@ intFunc _gm_cargarPrograma(char *keyName)
 	
 	return ((intFunc)dir_entr_prog);	
 }
+
+FILE * fer_GARLIC_fopen(const char * filename, const char * mode) {	
+	return (fopen(filename, mode));
+}
+
+int fer_GARLIC_fread(void * buffer, size_t size, size_t numele, FILE * file) {
+	return (fread(buffer, size, numele, file));
+}
+
+int fer_GARLIC_fclose(FILE * file) {
+	return (fclose(file));
+}

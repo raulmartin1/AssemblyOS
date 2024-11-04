@@ -75,6 +75,38 @@ int main(int argc, char **argv) {
 	}
 	else
 		printf("*** Programa \"PRNT\" NO cargado\n");
+		
+	printf("\n\n\n*** Carga de programa OPEN.elf\n");
+	start = _gm_cargarPrograma("open");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(0);		// llamada al proceso OPEN con argumento 1
+	}
+	else
+		printf("*** Programa \"OPEN\" NO cargado\n");
+		
+	printf("\n\n\n*** Carga de programa MMLL.elf\n");
+	start = _gm_cargarPrograma("mmll");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(1);		// llamada al proceso MMLL con argumento 1
+	}
+	else
+		printf("*** Programa \"MMLL\" NO cargado\n");
 
 	printf("*** Final fase 1_M\n");
 

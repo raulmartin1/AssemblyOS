@@ -11,16 +11,17 @@
 	.align 2
 	
 
-.global _gm_reubicar
-	@; Función para procesar los 'relocs' en un archivo ELF y ajustar
-	@; las direcciones de memoria de las referencias R_ARM_ABS32, restando 
-	@; la dirección inicial del segmento y sumando la dirección de destino.
-	@; Parámetros:
-	@; R0: dirección inicial del buffer de archivo (char *fileBuf)
-	@; R1: dirección de inicio del segmento (unsigned int pAddr)
+	.global _gm_reubicar
+	@; rutina para interpretar los 'relocs' de un fichero ELF y ajustar las
+	@; direcciones de memoria correspondientes a las referencias de tipo
+	@; R_ARM_ABS32, restando la dirección de inicio de segmento y sumando
+	@; la dirección de destino en la memoria;
+	@;Parámetros:
+	@; R0: dirección inicial del buffer de fichero (char *fileBuf)
+	@; R1: dirección de inicio de segmento (unsigned int pAddr)
 	@; R2: dirección de destino en la memoria (unsigned int *dest)
-	@; Resultado:
-	@; Ajuste de las direcciones de memoria según lo requerido.
+	@;Resultado:
+	@; cambio de las direcciones de memoria que se tienen que ajustar
 _gm_reubicar:
 	push {r0-r12, lr}
 		
