@@ -12,6 +12,10 @@
 
 #include <GARLIC_API.h>		// inclusión del API para simular un proceso
 
+#define MAX_DIM 1000000
+
+void MinimMaxim(int arg);
+
 int hola(int);				// función que simula la ejecución del proceso
 extern int prnt(int);		// otra función (externa) de test correspondiente
 							// a un proceso de usuario
@@ -19,6 +23,8 @@ extern int prnt(int);		// otra función (externa) de test correspondiente
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
 unsigned char baldosa[64];
+
+int PI_1(int arg);
 
 /* Inicializaciones generales del sistema Garlic */
 //------------------------------------------------------------------------------
@@ -56,9 +62,10 @@ int main(int argc, char **argv) {
 	hola(2);
 	_gd_pidz = 5;	// simular zócalo 5
 	prnt(1);
-
+	
 	_gg_escribir("*** Final fase 1_G\n", 0, 0, 0);
-
+	
+	
 	while (1)
 	{
 		swiWaitForVBlank();
@@ -118,7 +125,45 @@ int hola(int arg) {
 	
 	for (i = 0; i < iter; i++)		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: \x80Hello world!\n", GARLIC_pid(), i);
-
+	
+	GARLIC_printf("(%d)\t%d: \x80\n", GARLIC_pid(), i);
+	
+	PI_1(3);
 	return 0;
 }
+
+
+
+int PI_1(int arg){
+	
+	GARLIC_printf("\n-- Programa PI_1  -  PID (%d) --\n", GARLIC_pid());
+	
+	if(arg < 0) {
+		GARLIC_printf("(%d)\tNo se ha podido Calcular Pi\n Indica un argumento positivo\x80\n", GARLIC_pid());
+		return 0;
+	}
+	
+	double pi=0.0;
+	
+	int fracciones=1;					//numero de fracciones
+	for (int i = 0; i < arg; i++) {		// calculo de 2^arg
+	     fracciones *= 2; 
+	 }
+	 
+	for (int i = 0; i<fracciones; i++) { // calculo de la suma de la serie
+	    double fraccion;
+		if(i%2 == 0) fraccion = 1.0 / (2*i+1); 		//si es par, establece como positivo 1/(2i+1)
+		else fraccion = -1.0 / (2*i+1);			// si es impar, establece como negativo -1/(2i+1)
+        pi+=fraccion; 
+    }
+	pi *=4;
+	
+	unsigned long long parte_entera = (unsigned long long)pi; // Parte entera
+    unsigned long long parte_decimal = (unsigned long long)((pi - parte_entera) * 1000000); // 6 primeros digitos del decimal Pi
+
+    GARLIC_printf("PI Calculado es: %d.%d\n", (int)parte_entera, (int)parte_decimal); 
+
+    return 0;
+}
+
 
