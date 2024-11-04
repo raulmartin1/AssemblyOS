@@ -18,6 +18,7 @@ extern int prnt(int);		// otra función (externa) de test correspondiente
 
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
+unsigned char baldosa[64];
 
 /* Inicializaciones generales del sistema Garlic */
 //------------------------------------------------------------------------------
@@ -32,6 +33,8 @@ void inicializarSistema() {
 	_gd_seed = *punixTime;	// inicializar semilla para números aleatorios con
 	_gd_seed <<= 16;		// el valor de tiempo real UNIX, desplazado 16 bits
 }
+
+
 
 
 //------------------------------------------------------------------------------
@@ -61,7 +64,9 @@ int main(int argc, char **argv) {
 		swiWaitForVBlank();
 	}							// parar el procesador en un bucle infinito
 	return 0;
+
 }
+	
 
 
 /* Proceso de prueba */
@@ -76,6 +81,34 @@ int hola(int arg) {
 									// esccribir mensaje inicial
 	GARLIC_printf("-- Programa HOLA  -  PID (%d) --\n", GARLIC_pid());
 	
+	/* Crear baldosa Cara */
+	for (int i = 0; i < 64; i++) {
+        baldosa[i] = 0xFF; // Establecer todo a blanco
+    }
+
+    // Ojos (pintar de negro)
+    baldosa[9] = 0x00;
+    baldosa[10] = 0x00; 
+
+    baldosa[13] = 0x00; 
+    baldosa[14] = 0x00; 
+	
+	baldosa[17] = 0x00;
+    baldosa[18] = 0x00; 
+
+    baldosa[21] = 0x00; 
+    baldosa[22] = 0x00; 
+	
+	baldosa[41] = 0x00; 
+    baldosa[46] = 0x00;
+	baldosa[50] = 0x00; 
+    baldosa[51] = 0x00;
+	baldosa[52] = 0x00; 
+    baldosa[53] = 0x00;
+	
+	GARLIC_setChar(128, baldosa);
+	
+	
 	j = 1;							// j = cálculo de 10 elevado a arg
 	for (i = 0; i < arg; i++)
 		j *= 10;
@@ -84,7 +117,8 @@ int hola(int arg) {
 	iter++;							// asegurar que hay al menos una iteración
 	
 	for (i = 0; i < iter; i++)		// escribir mensajes
-		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
+		GARLIC_printf("(%d)\t%d: \x80Hello world!\n", GARLIC_pid(), i);
 
 	return 0;
 }
+

@@ -130,6 +130,21 @@ _ga_printf:
 	bl _gg_escribir			@; llamada a la función definida en "garlic_graf.c"
 	pop {r4, pc}
 
+	.global _ga_setChar
+	@;Parámetros
+	@; R0: unsigned char n
+	@; R1: unsigned char * buffer
+_ga_setChar:
+	push {r2-r4 ,lr}
+	ldr r4, =_gd_pidz		@; R4 = dirección _gd_pidz
+	ldr r3, [r4]
+	and r3, #0x3			@; R3 = ventana de salida (zócalo actual MOD 4)
+	bl _gg_setChar
+	pop {r2-r4 ,pc}
+	
+
+
+
 
 .end
 

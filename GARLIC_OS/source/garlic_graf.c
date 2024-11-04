@@ -20,9 +20,11 @@
 #define PCOLS	VCOLS * PPART	// número de columnas totales (en pantalla)
 #define PFILS	VFILS * PPART	// número de filas totales (en pantalla)
 
-#define LOWER_16_BITS_MASK 0xFFFF //Mascara para obtener los 16 bits bajos de pControl
+#define LOWER_16_BITS_MASK 0xFFFF // Mascara para obtener los 16 bits bajos de pControl
+#define TEXT_LIMIT (VCOLS*3)		// Limite de texto para el metodo _gg_escribir
 
 int bg2A, bg3A;
+int MapPtr2A;
 
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por parámetro*/
 void _gg_generarMarco(int v)
@@ -37,84 +39,73 @@ void _gg_generarMarco(int v)
 	int ArribaIzq=103;
 	
 	//elegimos en que ventana empezar
-	int baseX = (v % PPART) * VCOLS;
-	int baseY = (v / PPART) * VFILS;
+	//baseY = (v / PPART) * VFILS
+	//baseX = (v % PPART) * VCOLS
 	//calcula el desplazamiento vertical en el mapa de caracteres del fondo 3
 	//que se usa para posicionar el marco de la ventana, independientemente
 	//de la ventana que usemos, se colocara el dibujo en la posicion correcta
-	u16* mapPtr = bgGetMapPtr(bg3A) + (baseY*PCOLS);
-	
-	//Marco de Arriba
-	for (int col = 1; col < VCOLS; col++) {
-		mapPtr[baseX + col + (baseY * PCOLS)] = HArriba;
+	u16* mapPtr = bgGetMapPtr(bg3A) + (((v)/PPART)*VFILS*PCOLS);
+	if(v%PPART!=0){	//si es impar (se realiza desplazamiento para las ventanas de la derecha)
+		mapPtr+=(v%PPART)*VCOLS;
 	}
 	
-	//Marco de Abajo
-	int fila = VFILS-1; //fila inferior
-	for (int col = 1; col < VCOLS; col++){
-	mapPtr[baseX + col + (fila* PCOLS)] = HAbajo;
-	}
-	
-	//Marco Izquierda y Derecha
-	for(fila = 0; fila < VFILS; fila++){
-		if(fila ==0) { //primera fila
-			//Esquinas superiores
-			mapPtr[baseX + (fila* PCOLS)] = ArribaIzq;
-			mapPtr[baseX + (VCOLS-1)+(fila* PCOLS)] = ArribaDer;
-		} else if (fila != VFILS -1) { //filas antes de la ultima
-			mapPtr[baseX + (fila* PCOLS)] = VIzq;
-			mapPtr[baseX + (VCOLS-1) + (fila* PCOLS)] = VDer;
-		} else {  //ultima fila (fila == VFILS-1)
-			//Esquinas inferiores
-			mapPtr[baseX + (fila* PCOLS)] = AbajoIzq;
-			mapPtr[baseX + (VCOLS-1) + (fila* PCOLS)] = AbajoDer;
+	for (int fila=0; fila<VFILS; fila++) { 
+		for (int col=0; col<VCOLS;  col++) {
+			if (fila==0) {	//primera fila
+				if(col==0) mapPtr[col+fila*PCOLS]=ArribaIzq; //esquina superior izquierda
+				else {
+					if(col==VCOLS-1) mapPtr[col+fila*PCOLS]=ArribaDer; //esquina superior derecha
+					else mapPtr[col+fila*PCOLS]=HArriba; //linea superior horizontal
+				}
+			}
+			else if(fila!=VFILS-1){	//Filas intermedias
+				if(col==0) mapPtr[col+fila*PCOLS]=VIzq; //vertical izquierda
+				else if(col==VCOLS-1) mapPtr[col+fila*PCOLS]=VDer; //vertical derecho
+			}
+			else { //Ultima fila (VFILS-1)
+				if(col==0) mapPtr[col+fila*PCOLS]= AbajoIzq; //esquina inferior izquierda
+				else {
+					if(col==VCOLS-1) mapPtr[col+fila*PCOLS]=AbajoDer; //esquina inferior derecha
+					else mapPtr[col+fila*PCOLS]=HAbajo; //linea inferior horizontal
+				}
+			}	
 		}
 	}
 	
-	if( v == 0 || v == 1 ) { //Si es ventana 0 o 1 (superiores)
-		int filaInf = VFILS -1;	//ultima de las ventanas superiores
-		for (int col = 1; col < VCOLS - 1; col++) {
-			mapPtr[baseX + col + (filaInf * PCOLS)] = HAbajo;	//linea inferior separacion de ventanas
-		}
-	}
-	if( v == 2 || v == 3 ) { //Si es ventana 2 o 3 (inferiores)
-		int filaSup = 0;	//primera fila de las ventanas inferiores
-		for (int col = 1; col < VCOLS - 1; col++) {
-			mapPtr[baseX + col + (filaSup * PCOLS)] = HArriba;	//linea superior separacion de ventanas
-		}
-	}
 }
 
 
 /* _gg_iniGraf: inicializa el procesador gráfico A para GARLIC 1.0 */
 void _gg_iniGrafA()
 {
-	videoSetMode(MODE_5_2D);
-	vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
+	videoSetMode(MODE_5_2D); // inicializar el procesador gráfico principal (A) en modo 5, con salida en la pantalla superior de la NDS
+	vramSetBankA(VRAM_A_MAIN_BG_0x06000000); // reservar el banco de memoria de vídeo A
 	
-	//Direccio inici mapa = 0x06000000 + (mapBase * 2KB)
-	//Direccion inici de baldosas = 0x06000000 + (tileBase * 16 KB)
-	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_512x512, 10, 3);
-	bg3A = bgInit(3, BgType_ExRotation , BgSize_ER_512x512, 12, 4);
+	//inicializar los fondos gráficos 2 y 3 en modo Extended Rotation, con un tamaño total de 512x512 píxeles
+	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_512x512, 0, 3);
+	bg3A = bgInit(3, BgType_ExRotation , BgSize_ER_512x512, 4, 3);
 	
+	MapPtr2A = (int) bgGetMapPtr(bg2A);
+	
+	//fijar el fondo 3 como más prioritario que el fondo 2
 	bgSetPriority(bg3A,0);
 	bgSetPriority(bg2A,1);
 	
-	decompress(garlic_fontTiles, bgGetGfxPtr(bg3A) ,LZ77Vram);
-	dmaCopy(garlic_fontPal, BG_PALETTE, sizeof(garlic_fontPal));
+	decompress(garlic_fontTiles, bgGetGfxPtr(bg3A) ,LZ77Vram); //descomprimir el contenido de la fuente de letras sobre una zona adecuada de la memoria de vídeo
+	dmaCopy(garlic_fontPal, BG_PALETTE, sizeof(garlic_fontPal)); //copiar la paleta de colores de la fuente de letras sobre la zona de memoria correspondiente
 	
+	//generar los marcos de las ventanas de texto en el fondo 3
 	for(int i=0; i<NVENT; i++) {
 	_gg_generarMarco(i);
 	}
 	
-	bgSetScale(bg2A, inttof32(0.125), inttof32(0.125));
-	bgSetScale(bg3A, inttof32(0.125), inttof32(0.125));
-	//bgSetScale(bg2A, inttof32(0.5), inttof32(0.5));
-	//bgSetScale(bg3A, inttof32(0.5), inttof32(0.5));
+	//escalar los fondos 2 y 3 para que se ajusten exactamente a las dimensiones de una pantalla de la NDS (reducción al 50%)
+	bgSetScale(bg2A, 512, 512);
+	bgSetScale(bg3A, 512, 512);
 	
+	//Actualizar
 	bgUpdate();
 }
-
 
 
 /* _gg_procesarFormato: copia los caracteres del string de formato sobre el
@@ -136,45 +127,50 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 {	
 	int i=0; //index del resultat
 	int j=0; //index dels strings
-	int index = 0;	//index aracteres de formato
-	int vTranscrits=2; //inicialment encara no s'ha transcrit ningun dels 2
+	int index = 0;	//index caracteres de formato
+	int vTranscrits=0; //inicialment encara no s'ha transcrit ningun dels 2
 	char ValToString[11]; // unsigned int max es 4.294.967.295, 10 numeros mas '\0' de final de cadena 
-	for (index = 0; formato[index] != '\0'; index++) {
-		if(formato[index] == '%'){
+	
+	while(formato[index] != '\0') {
+		if(formato[index] == '%' && vTranscrits < 2){
 		index++;	//avanzar al caracter on esta el tipus de format
 		
-		if (formato[index] == 'c' && vTranscrits > 0) { //si es un caracter
-			if(vTranscrits ==2) {
+		if (formato[index] == 'c' && vTranscrits < 2) { //si es un caracter
+			if(vTranscrits ==0) {
 				resultado[i] = (char) val1;
 			}
 			if(vTranscrits ==1) {
 				resultado[i] = (char) val2;
 			}
 			i++;
-			vTranscrits--;
+			vTranscrits++;
+			index++;
 		}
 		
-		if(formato[index] == 'd' && vTranscrits > 0) { //si es numero decimal
+		else if(formato[index] == 'd' && vTranscrits < 2) { //si es numero decimal
 			size_t longitud = sizeof(ValToString);
-			if(vTranscrits == 2) {
-				_gs_num2str_dec(ValToString, longitud, val1);
+			if(vTranscrits == 0) {
+				_gs_num2str_dec(ValToString, longitud, val1); //valor numeric a string(String en digits numerics)
 			}
 			if(vTranscrits == 1) {
 				_gs_num2str_dec(ValToString, longitud, val2);
 			}
-		
+			
 			j=0;
 			while(ValToString[j] != '\0') {
+				if(ValToString[j] !=' ') {
 				resultado[i]=ValToString[j];
-				i++; j++;
+				i++;}
+				j++;
 				}
-				vTranscrits--;
+				vTranscrits++;
+				index++;
 		}
 		
-		if(formato[index] == 'x' && vTranscrits > 0) { //si es numero hexadecimal
+		else if(formato[index] == 'x' && vTranscrits < 2) { //si es numero hexadecimal
 		size_t longitud = sizeof(ValToString);
-			if(vTranscrits == 2) {
-				_gs_num2str_hex(ValToString, longitud, val1);
+			if(vTranscrits == 0) {
+				_gs_num2str_hex(ValToString, longitud, val1); 
 			}
 			if(vTranscrits == 1) {
 				_gs_num2str_hex(ValToString, longitud, val2);
@@ -184,16 +180,30 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 			while(ValToString[j] != '\0') {
 				if(ValToString[j] != '0' ) { //saltar ceros al inicio del numero hexadecimal
 					resultado[i]=ValToString[j];
+					i++;
 				}
-				i++; j++;
+				j++;
 			}
-			vTranscrits--;	
+			index++;
+			vTranscrits++;
 		}
 		
-		if(formato[index] == 's' && vTranscrits>0){ //si es un string i aun quedan valores por transcribir
-		char *punteroString = NULL; 
-			if(vTranscrits == 2){ //encara no s'ha transcrit ningun
-				punteroString = (char *) val1;
+		else if(formato[index] == '%' || vTranscrits == 2){ // si es un % literal
+			resultado[i] = '%';
+		
+			if(vTranscrits == 2) {	//no quedan valors a transcriure
+			i++;
+			resultado[i] = formato[index];	//coloquem el caracter literal
+			}
+			i++;
+			index++;
+		}	
+		
+		if(formato[index] == 's' && vTranscrits < 2){ //si es un string i aun quedan valores por transcribir
+			char* punteroString = (char*)NULL; //puntero a array de caracteres
+			//fem un casting, de unsignned int a char*
+			if(vTranscrits == 0){ //encara no s'ha transcrit ningun
+				punteroString = (char *) val1; 
 			}
 			if(vTranscrits == 1){ //queda un valor per ser transcrit
 				punteroString = (char*) val2;
@@ -203,21 +213,14 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 				resultado[i]=punteroString[j];
 				i++; j++;
 			}
-			vTranscrits--;	//s'ha transcrit un valor
+			index++;
+			vTranscrits++;	//s'ha transcrit un valor
 		}
 		
-		if(formato[index] == '%'){ // si es un % literal
-			resultado[i]='%';
-			i++;
-		}
-		if(vTranscrits == 0) {	//no quedan valors a transcriure
-			resultado[i] = formato[index];	//coloquem el caracter literal
-			i++;
-		}
-	
 	}else {
 		resultado[i] = formato[index]; //coloquem el caracter literal
 		i++;
+		index++;
 	}
 }	//analizamos sigueinte caracter de la variable formato
 	
@@ -238,45 +241,99 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 */
 void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int ventana)
 {
-	int nChars, filaActual;
-	char resultado[VCOLS*3]=""; //mensaje resultante,32 caracterees por linea, 3 lineas de texto (limitamos a 3 lineas  de texto)
+	char resultado[TEXT_LIMIT]=""; //mensaje resultante,32 caracterees por linea, 3 lineas de texto (limitamos a 3 lineas  de texto)
 	_gg_procesarFormato(formato, val1, val2, resultado);
 	
 	// 16 bits altos del pControl: número de línea (0..23)
 	// 16 bits bajos del pControl: caracteres pendientes(0..32)
 	//numero de caracteres de la ventana actual
 	//obtenemos los 16 bits bajos de pControl
-	nChars = _gd_wbfs[ventana].pControl & LOWER_16_BITS_MASK; //AND->Si los dos bits son 1 los pone a 1
-	filaActual = _gd_wbfs[ventana].pControl >> 16; //Desplazamos 16 bits a la derecha, borrando asi los 16 menos significativos
+	int nChars = _gd_wbfs[ventana].pControl & LOWER_16_BITS_MASK; //AND->Si los dos bits son 1 los pone a 1
+	int filaActual = _gd_wbfs[ventana].pControl >> 16; //Desplazamos 16 bits a la derecha, borrando asi los 16 menos significativos
 	//Ahora los mas bajos serán los que antes eran los 16 altos, filaActual=16 bits mas altos de pControl
-
-	char car;	//caracter actual
-	for(int i =0; resultado[i] != '\0'; i++){
-		car=resultado[i];
-
+	int i=0; 
+	
+	char car = resultado[i];	//caracter actual
+	while(car != '\0'){
 		if(car == '\t'){
-		while(nChars < VCOLS && nChars % 4 != 0) {
-		_gd_wbfs[ventana].pChars[nChars]=' '; //se añaden espacios hasta proxima columna con indice multiplo de 4
-		nChars++;
-		}
-		}else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> añadir caracter al buffer de la ventana
-		_gd_wbfs[ventana].pChars[nChars] = car; //se añade el caracter
-		nChars++;
+			int espaciosRestantes = 4 - (nChars % 4); //Calculo de espacios que faltan
+			while(espaciosRestantes > 0 && nChars < VCOLS) {
+				_gd_wbfs[ventana].pChars[nChars]=' '; //se añaden espacios hasta proxima columna con indice multiplo de 4
+				nChars++;
+				espaciosRestantes--;
 		}
 		
-		if(car == '\n' || nChars == VCOLS) {
-		/* _gp_WaitForVBlank: sustituto de swiWaitForVBlank() para Garlic; */
-		swiWaitForVBlank();
-		if(filaActual==VFILS) {
-		_gg_desplazar(ventana);
-		filaActual--;
 		}
-		_gg_escribirLinea(ventana, filaActual, nChars);
-		filaActual++;	//siguiente fila
-		nChars=0;		//preparamos el numero de caracteres a 0 para la nueva fila
+		/*
+		else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> añadir caracter al buffer de la ventana
+			_gd_wbfs[ventana].pChars[nChars] = car; //se añade el caracter
+			nChars++;
+		}
+		*/
+		else if(car == '\n' || nChars == VCOLS) {
+			/* _gp_WaitForVBlank: sustituto de swiWaitForVBlank() para Garlic; */
+			//_gp_WaitForVBlank();
+			swiWaitForVBlank();
+			if(filaActual==VFILS) {
+				_gg_desplazar(ventana); //desplaçament dels codi de rajola (scroll)
+				filaActual--;
+			}
+			_gg_escribirLinea(ventana, filaActual, nChars); //transfereix del buffer al mapa de rajoles 
+			filaActual++;	//siguiente fila
+			nChars=0;		//preparamos el numero de caracteres a 0 para la nueva fila
+		}
+		else if(car == '\\' && resultado[i+1]=='x') {
+			unsigned char simbol;
+			char v1 = resultado[i+2];
+			char v2 = resultado[i+3];
+			char s1=0;
+			char s2=0;
+			if(v1>= 0 && v1 <= 57){	// 0=48(ASCII) 9=57(ASCII)
+				s1 = v1 - 48; 
+			}
+			else if(v1 >= 65 && v1 <= 70) {	// A=65(ASCII) F=70(ASCII)
+				s1= v1 - 55; //convertir a numero
+			}
+			
+			if(v2>= 0 && v2 <= 57) {
+				s2 = v2 - 48; // 48 = a 0 en ASCII
+			}
+			else if(v2 >= 65 && v2 <= 70) {
+				s2 = v2 - 55;
+			}
+			
+			simbol = (s1<<4); // mueve 4 posiciones a la izquierda
+			simbol += s2;	//añade el segundo valor
+			
+			if (simbol >= 128 && simbol <=255) {
+				_gd_wbfs[ventana].pChars[nChars]=simbol;
+				nChars++;
+			
+			}
+			i=i+3;
+		}
+		else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> añadir caracter al buffer de la ventana
+			_gd_wbfs[ventana].pChars[nChars] = car; //se añade el caracter
+			nChars++;
+		}
+		
+		i++;
+		car=resultado[i];
+		
 		}
 		_gd_wbfs[ventana].pControl = (filaActual << 16); //coloquem el num de la fila actual als 16 primers bits(bits alts) de pControl
-		_gd_wbfs[ventana].pControl += nChars; //coloca el numero de caracteres escrits en els 16 ultims bits(bits baixos)
+		_gd_wbfs[ventana].pControl += nChars; //coloca el numero de caracteres escrits en els 16 ultims bits(bits baixos	
 		
 }
-}
+
+	void _gg_setChar(unsigned char n, unsigned char *buffer) {
+	if(n>=128 && n<=255){
+		int base = 0x06000000; 				
+		//16KB * 3 = 48 KB -> 48*1024= 49152-> 0xC000
+		base=base+0xC000;				//base donde acaban los 127 caracteres predeterminados
+		int desplazamiento = base+(n*64); //64 bytes que ocupa un baldosa completa 8x8
+		dmaCopy(buffer, (u16*)desplazamiento, 64); //copiamos la baldosa en la posicion de la memoria
+		bgUpdate();
+	}
+	}
+
