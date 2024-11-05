@@ -107,6 +107,9 @@ extern int _gp_numProc();
 */
 extern int _gp_crearProc(intFunc funcion, int zocalo, char *nombre, int arg);
 
+extern int _gp_waitS(int sem);
+
+extern int _gp_signalS(int sem);
 
 
 //------------------------------------------------------------------------------

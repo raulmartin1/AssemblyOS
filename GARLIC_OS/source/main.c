@@ -55,11 +55,13 @@ int main(int argc, char **argv) {
 	_gp_crearProc(hola, 7, "HOLA", 2);
 	_gp_crearProc(pres, 14, "PRES", 2);
 
-	while (_gp_numProc() > 1)
+	while (_gp_numProc() > 2)
 	{
 		_gp_WaitForVBlank();
 		printf("*** Test %d:%d\n", _gd_tickCount, _gp_numProc());
 	}						// esperar a que terminen los procesos de usuario
+
+	_gp_waitS(0);	// el SO esperara que acabe el programa PRES
 
 	printf("*** Final fase 1_P\n");
 
@@ -92,6 +94,7 @@ int hola(int arg) {
 	
 	for (i = 0; i < iter; i++)		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
+
 
 	GARLIC_signal(7);	// desbloquear proceso en _gd_mutex[7]
 
@@ -127,7 +130,8 @@ int pres(int arg) {
 
 	GARLIC_wait(7);	// bloquear el proceso usando el _gd_mutex[7]
 
-	GARLIC_printf("(%d)\tCalculamos valor prestamo en centimos entre cuotas, y obtenemos valor cuotas en centimos, con un error de menos de 1 centimo en cada cuota.\n", GARLIC_pid());
+	GARLIC_printf("(%d)\tCalculamos valor prestamo en centimos entre cuotas, y obtenemos valor", GARLIC_pid());
+	GARLIC_printf(" cuotas en centimos, con un error de menos de 1 centimo en cada cuota.\n");
 	GARLIC_divmod(prestamo*100, cuotas, &temp, &mod);		//calcular valor mensual de cada cuota (en centimos)
 
 	//mostrar el valor de las cuotas en centimos
@@ -152,6 +156,8 @@ int pres(int arg) {
 
 	GARLIC_printf("(%d)\tCoste total: %d euros\n", GARLIC_pid(), precio);
 	GARLIC_printf("(%d)\tcon %d centimos.\n", GARLIC_pid(), mod);
+
+	GARLIC_signal(0);
 
 	return 0;
 }
