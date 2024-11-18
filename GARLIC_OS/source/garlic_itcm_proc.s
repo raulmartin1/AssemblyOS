@@ -359,6 +359,15 @@ _gp_restaurarProc:
 	pop {r8-r11, pc}
 
 
+	@; Rutina para actualizar la cola de procesos retardados, poniendo en
+	@; cola de READY aquellos cuyo n�mero de tics de retardo sea 0
+_gp_actualizarDelay:
+	push {lr}
+
+
+	pop {pc}
+
+
 	.global _gp_numProc
 	@;Resultado
 	@; R0: numero de procesos total
@@ -367,8 +376,11 @@ _gp_numProc:
 
 	mov r0, #1				@; contar siempre 1 proceso en RUN
 	ldr r1, =_gd_nReady
-	ldr r2, [r1]			@; R2 = numero de procesos en cola de READY
-	add r0, r2				@; añadir procesos en READY
+	ldr r2, [r1]			@; R2 = n�mero de procesos en cola de READY
+	add r0, r2				@; a�adir procesos en READY
+	ldr r1, =_gd_nDelay
+	ldr r2, [r1]			@; R2 = n�mero de procesos en cola de DELAY
+	add r0, r2				@; a�adir procesos retardados
 
 	pop {r1-r2, pc}
 
@@ -482,6 +494,7 @@ _gp_terminarProc:
 	ldr r0, =_gd_pidz
 	ldr r1, [r0]			@; R1 = valor actual de PID + zocalo
 	and r1, r1, #0xf		@; R1 = zocalo del proceso desbancado
+	bl _gp_inhibirIRQs
 	str r1, [r0]			@; guardar zocalo con PID = 0, para no salvar estado			
 	ldr r2, =_gd_pcbs
 	mov r10, #24
@@ -489,10 +502,79 @@ _gp_terminarProc:
 	add r2, r11				@; R2 = direccion base _gd_pcbs[zocalo]
 	mov r3, #0
 	str r3, [r2]			@; pone a 0 el campo PID del PCB del proceso
+	str r3, [r2, #20]		@; borrar porcentaje de USO de la CPU
+	ldr r0, =_gd_sincMain
+	ldr r2, [r0]			@; R2 = valor actual de la variable de sincronismo
+	mov r3, #1
+	mov r3, r3, lsl r1		@; R3 = m�scara con bit correspondiente al z�calo
+	orr r2, r3
+	str r2, [r0]			@; actualizar variable de sincronismo
+	bl _gp_desinhibirIRQs
 .LterminarProc_inf:
 	bl _gp_WaitForVBlank	@; pausar procesador
 	b .LterminarProc_inf	@; hasta asegurar el cambio de contexto
 
 
+
+	.global _gp_matarProc
+	@; Rutina para destruir un proceso de usuario:
+	@; borra el PID del PCB del z�calo referenciado por par�metro, para indicar
+	@; que esa entrada del vector _gd_pcbs est� libre; elimina el �ndice de
+	@; z�calo de la cola de READY o de la cola de DELAY, est� donde est�;
+	@; Par�metros:
+	@;	R0:	z�calo del proceso a matar (entre 1 y 15).
+_gp_matarProc:
+	push {lr}
+
+
+	pop {pc}
+
+	
+	.global _gp_retardarProc
+	@; retarda la ejecuci�n de un proceso durante cierto n�mero de segundos,
+	@; coloc�ndolo en la cola de DELAY
+	@;Par�metros
+	@; R0: int nsec
+_gp_retardarProc:
+	push {lr}
+
+
+	pop {pc}			@; no retornar� hasta que se haya agotado el retardo
+
+
+	.global _gp_inihibirIRQs
+	@; pone el bit IME (Interrupt Master Enable) a 0, para inhibir todas
+	@; las IRQs y evitar as� posibles problemas debidos al cambio de contexto
+_gp_inhibirIRQs:
+	push {lr}
+
+
+	pop {pc}
+
+
+	.global _gp_desinihibirIRQs
+	@; pone el bit IME (Interrupt Master Enable) a 1, para desinhibir todas
+	@; las IRQs
+_gp_desinhibirIRQs:
+	push {lr}
+
+
+	pop {pc}
+
+
+	.global _gp_rsiTIMER0
+	@; Rutina de Servicio de Interrupci�n (RSI) para contabilizar los tics
+	@; de trabajo de cada proceso: suma los tics de todos los procesos y calcula
+	@; el porcentaje de uso de la CPU, que se guarda en los 8 bits altos de la
+	@; entrada _gd_pcbs[z].workTicks de cada proceso (z) y, si el procesador
+	@; gr�fico secundario est� correctamente configurado, se imprime en la
+	@; columna correspondiente de la tabla de procesos.
+_gp_rsiTIMER0:
+	push {lr}
+
+	
+	pop {pc}
+
+	
 .end
 
