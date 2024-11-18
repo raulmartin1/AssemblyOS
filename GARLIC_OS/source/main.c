@@ -1,22 +1,14 @@
 /*------------------------------------------------------------------------------
 
-	"main.c" : fase 1 / programador P
-
-	Programa de prueba de creacion y multiplexacion de procesos en GARLIC 1.0,
-	pero sin cargar procesos en memoria ni utilizar llamadas a _gg_escribir().
+PROGRAMA PRINCIPAL GARLIC OS
 
 ------------------------------------------------------------------------------*/
 #include <nds.h>
-#include <stdio.h>
-
 #include "garlic_system.h"	// definicion de funciones y variables de sistema
 
-#include <GARLIC_API.h>		// inclusion del API para simular un proceso
-int hola(int);				// funcion que simula la ejecucion del proceso
-
-int pres(int);				// funcion que simula la ejecucion del proceso (programa de usuario)
-
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
+
+unsigned char baldosa[64];
 
 
 /* Inicializaciones generales del sistema Garlic */
@@ -36,128 +28,97 @@ void inicializarSistema() {
 	
 	_gd_pcbs[0].keyName = 0x4C524147;	// "GARL"
 
+	int v;
+
+	_gg_iniGrafA();		// inicializar procesador grafico A
+	for (v = 0; v < 4; v++)	// para todas las ventanas
+	{
+		_gd_wbfs[v].pControl = 0;		// inicializar los buffers de ventana
+	}
+
+	if (!_gm_initFS())
+	{
+		_gg_escribir("ERROR: no se puede inicializar el sistema de ficheros!", 0, 0, 0);
+		exit(0);
+	}
+
+	/* Crear baldosa Cara */
+    for (int i = 0; i < 64; i++) {
+        baldosa[i] = 0xFF; // Establecer todo a blanco
+    }
+
+    // Ojos (pintar de negro)
+    baldosa[9] = 0x00;
+    baldosa[10] = 0x00; 
+
+    baldosa[13] = 0x00; 
+    baldosa[14] = 0x00; 
+
+    baldosa[17] = 0x00;
+    baldosa[18] = 0x00; 
+
+    baldosa[21] = 0x00; 
+    baldosa[22] = 0x00; 
+
+    baldosa[41] = 0x00; 
+    baldosa[46] = 0x00;
+    baldosa[50] = 0x00; 
+    baldosa[51] = 0x00;
+    baldosa[52] = 0x00; 
+    baldosa[53] = 0x00;
+
+	_gg_setChar(128, baldosa);
 }
 
 
 //------------------------------------------------------------------------------
 int main(int argc, char **argv) {
 //------------------------------------------------------------------------------
-	
+	intFunc pres;
+	intFunc pi_1;
+	intFunc mmll;
+	intFunc open;
+
 	inicializarSistema();
-	
-	printf("********************************");
-	printf("*                              *");
-	printf("* Sistema Operativo GARLIC 1.0 *");
-	printf("*                              *");
-	printf("********************************");
-	printf("*** Inicio fase 1_P\n");
-	
-	_gp_crearProc(hola, 7, "HOLA", 2);
-	_gp_crearProc(pres, 14, "PRES", 2);
 
-	while (_gp_numProc() > 2)
-	{
+	_gg_escribir("********************************", 0, 0, 0);
+	_gg_escribir("*                              *", 0, 0, 0);
+	_gg_escribir("* Sistema Operativo GARLIC 1.0 *", 0, 0, 0);
+	_gg_escribir("*                              *", 0, 0, 0);
+	_gg_escribir("********************************", 0, 0, 0);
+	_gg_escribir("Inicio Fase 1", 0, 0, 0);
+
+
+	
+	_gg_escribir("*** Carga de programa PRES.elf\n", 0, 0, 0);
+	pres = _gm_cargarPrograma("PRES");
+			
+	_gg_escribir("\n*** Carga de programa PI_1.elf\n", 0, 0, 0);
+	pi_1 = _gm_cargarPrograma("PI_1");
+			
+	_gg_escribir("\n*** Carga de programa MMLL.elf\n", 0, 0, 0);
+	mmll = _gm_cargarPrograma("MMLL");
+
+	_gg_escribir("\n*** Carga de programa OPEN.elf\n", 0, 0, 0);
+	open = _gm_cargarPrograma("OPEN");
+
+	_gg_escribir("Inicio de los procesos.\n", 0, 0, 0);
+	
+	_gp_crearProc(pres, 1, "PRES", 2);
+	_gp_crearProc(pi_1, 2, "PI_1", 2);
+	_gp_crearProc(mmll, 3, "MMLL", 2);
+
+
+	while(_gp_numProc() > 1){
 		_gp_WaitForVBlank();
-		printf("*** Test %d:%d\n", _gd_tickCount, _gp_numProc());
-	}						// esperar a que terminen los procesos de usuario
+	}
 
-	_gp_waitS(0);	// el SO esperara que acabe el programa PRES
 
-	printf("*** Final fase 1_P\n");
+	_gg_escribir("\x80\x80\x80 Final fase 1 \x80\x80\x80\n", 0, 0, 0);
 
 	while (1)
 	{
 		_gp_WaitForVBlank();
 	}							// parar el procesador en un bucle infinito
-	return 0;
-}
-
-
-/* Proceso de prueba, con llamadas a las funciones del API del sistema Garlic */
-//------------------------------------------------------------------------------
-int hola(int arg) {
-//------------------------------------------------------------------------------
-	unsigned int i, j, iter;
-	
-	if (arg < 0) arg = 0;			// limitar valor maximo y 
-	else if (arg > 3) arg = 3;		// valor minimo del argumento
-	
-									// esccribir mensaje inicial
-	GARLIC_printf("-- Programa HOLA  -  PID (%d) --\n", GARLIC_pid());
-	
-	j = 1;							// j = calculo de 10 elevado a arg
-	for (i = 0; i < arg; i++)
-		j *= 10;
-						// calculo aleatorio del numero de iteraciones 'iter'
-	GARLIC_divmod(GARLIC_random(), j, &i, &iter);
-	iter++;							// asegurar que hay al menos una iteracion
-	
-	for (i = 0; i < iter; i++)		// escribir mensajes
-		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
-
-
-	GARLIC_signal(7);	// desbloquear proceso en _gd_mutex[7]
-
-	return 0;
-}
-
-/* Proceso de usuario, con llamadas a las funciones API del sistema Garlic*/
-int pres(int arg) {
-
-	unsigned int prestamo, cuotas, precio, mod, temp;
-
-	//comprobar que argumento tiene un valor correcto
-	if(arg < 0) arg = 0;
-	else if(arg > 3) arg = 3;
-
-	//titulo proceso
-	GARLIC_printf("-- Programa PRES  -  PID (%d) --\n", GARLIC_pid());
-
-	//informacion inicial
-	GARLIC_printf("(%d)\tPrestamo calculado aleatorio, valor entre 1000 y %d\n", GARLIC_pid(), (arg+1)*10000);
-	GARLIC_printf("(%d)\tCuotas calculadas aleatorias, valor entre 4 y 63\n", GARLIC_pid());
-
-	prestamo = GARLIC_random() & (arg+1)*10000;		//limitar prestamo al maximo calculado
-	prestamo |= 1000;		//asegurar que es de almenos 1000 euros
-
-	//mostramos cual es el valor del prestamo aleatorio
-	GARLIC_printf("(%d)\tValor pres.: %d euros.\n", GARLIC_pid(), prestamo);
-
-	cuotas = (GARLIC_random() & 0x3F) | 0xC;	//limitar cuotas entre 12 y 63 (5 años aprox.)
-
-	//mostramos el numero de cuotas aleatorias en las que hay que pagar el prestamo
-	GARLIC_printf("(%d)\tCuotas a pagar: %d\n", GARLIC_pid(), cuotas);
-
-	GARLIC_wait(7);	// bloquear el proceso usando el _gd_mutex[7]
-
-	GARLIC_printf("(%d)\tCalculamos valor prestamo en centimos entre cuotas, y obtenemos valor", GARLIC_pid());
-	GARLIC_printf(" cuotas en centimos, con un error de menos de 1 centimo en cada cuota.\n");
-	GARLIC_divmod(prestamo*100, cuotas, &temp, &mod);		//calcular valor mensual de cada cuota (en centimos)
-
-	//mostrar el valor de las cuotas en centimos
-	GARLIC_printf("(%d)\tValor cuotas en centimos:\n\t%d\n", GARLIC_pid(), temp);
-
-	GARLIC_divmod(temp, 100, &precio, &mod);		//calcular valor mensual de cada cuota (en euros); mod = parte decimal de la cuota
-
-	//mostrar cada parte de la cuota individualmente
-	GARLIC_printf("(%d)\tValor en euros: %d\n", GARLIC_pid(), precio);
-	GARLIC_printf("(%d)\tParte decimal: %d\n", GARLIC_pid(), mod);
-
-	GARLIC_printf("(%d)\tSi la parte decimal no es multiplo de 10, se suma 1 a los centimos para que el banco no pierda dinero.\n", GARLIC_pid());
-	GARLIC_divmod(mod, 10, &prestamo, &temp);		//comprobar si mod acaba en 0 (es decir, si no faltara ningun centimo en el pago total)
-	if(temp != 0) mod++;		//si no lo es, sumamos 1 a los centimos para que el banco no pierda dinero
-
-	//coste mensual final
-	GARLIC_printf("(%d)\tCoste mensual: %d euros\n", GARLIC_pid(), precio);		//mostramos por pantalla el pago mensual que se debera hacer
-	GARLIC_printf("(%d)\tcon %d centimos.\n", GARLIC_pid(), mod);
-
-	//calcular de nuevo el precio con el ajuste de centimos y mostrar el coste total final
-	GARLIC_divmod((precio*100+mod)*cuotas, 100, &precio, &mod);
-
-	GARLIC_printf("(%d)\tCoste total: %d euros\n", GARLIC_pid(), precio);
-	GARLIC_printf("(%d)\tcon %d centimos.\n", GARLIC_pid(), mod);
-
-	GARLIC_signal(0);
-
 	return 0;
 }
