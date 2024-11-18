@@ -1,6 +1,6 @@
 @;==============================================================================
 @;
-@;	"garlic_vector.s":	vector de direcciones de rutinas del API de GARLIC 1.0
+@;	"garlic_vector.s":	vector de direcciones de rutinas del API de GARLIC 2.0
 @;
 @;==============================================================================
 
@@ -19,5 +19,9 @@ APIVector:						@; Vector de direcciones de rutinas del API
 	.word	_ga_wait
 	.word	_ga_signal
 	.word	_ga_setChar
+	.word	_ga_printchar
+	.word	_ga_printmat
+	.word	_ga_delay
+	.word	_ga_clear
 
 .end

@@ -1,7 +1,7 @@
 @;==============================================================================
 @;
 @;	"GARLIC_API.s":	implementaci�n de funciones del API del sistema operativo
-@;					GARLIC 1.0 (descripci�n de funciones en "GARLIC_API.h")
+@;					GARLIC 2.0 (descripci�n de funciones en "GARLIC_API.h")
 @;
 @;==============================================================================
 
@@ -48,7 +48,7 @@ GARLIC_printf:
 	mov lr, pc
 	ldr pc, [r4, #16]		@; llamada indirecta a rutina 0x04
 	pop {r4, pc}
-	
+
 
 	.global GARLIC_fopen
 GARLIC_fopen:
@@ -97,6 +97,38 @@ GARLIC_setChar:
 	mov r4, #0
 	mov lr, pc
 	ldr pc, [r4, #40]		@; llamada indirecta a rutina 0x0A
+	pop {r4, pc}
+
+	.global GARLIC_printchar
+GARLIC_printchar:
+	push {r4, lr}
+	mov r4, #0
+	mov lr, pc
+	ldr pc, [r4, #44]		@; llamada indirecta a rutina 0x05
+	pop {r4, pc}
+
+	.global GARLIC_printmat
+GARLIC_printmat:
+	push {r4, lr}
+	mov r4, #0
+	mov lr, pc
+	ldr pc, [r4, #48]		@; llamada indirecta a rutina 0x06
+	pop {r4, pc}
+
+	.global GARLIC_delay
+GARLIC_delay:
+	push {r4, lr}
+	mov r4, #0
+	mov lr, pc
+	ldr pc, [r4, #52]		@; llamada indirecta a rutina 0x07
+	pop {r4, pc}
+
+	.global GARLIC_clear
+GARLIC_clear:
+	push {r4, lr}
+	mov r4, #0
+	mov lr, pc
+	ldr pc, [r4, #56]		@; llamada indirecta a rutina 0x08
 	pop {r4, pc}
 
 .end
