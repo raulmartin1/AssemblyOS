@@ -1,7 +1,7 @@
 @;==============================================================================
 @;
-@;	"garlic_itcm_api.s":	c�digo de las rutinas del API de GARLIC 1.0
-@;							(ver "GARLIC_API.h" para descripci�n de las
+@;	"garlic_itcm_api.s":	codigo de las rutinas del API de GARLIC 2.0
+@;							(ver "GARLIC_API.h" para descripcion de las
 @;							 funciones correspondientes)
 @;
 @;==============================================================================
@@ -29,7 +29,7 @@ _ga_pid:
 _ga_random:
 	push {r1-r5, lr}
 	ldr r0, =_gd_seed
-	ldr r1, [r0]			@; R1 = valor de semilla de n�meros aleatorios
+	ldr r1, [r0]			@; R1 = valor de semilla de numeros aleatorios
 	ldr r2, =0x0019660D
 	ldr r3, =0x3C6EF35F
 	umull r4, r5, r1, r2	@; R5:R4 = _gd_seed * 0x19660D
@@ -40,23 +40,23 @@ _ga_random:
 
 
 	.global _ga_divmod
-	@;Par�metros
+	@;Parametros
 	@; R0: unsigned int num
 	@; R1: unsigned int den
 	@; R2: unsigned int * quo
 	@; R3: unsigned int * mod
 	@;Resultado
-	@; R0: 0 si no hay problema, !=0 si hay error en la divisi�n
+	@; R0: 0 si no hay problema, !=0 si hay error en la division
 _ga_divmod:
 	push {r4-r7, lr}
-	cmp r1, #0				@; verificar si se est� intentando dividir por cero
+	cmp r1, #0				@; verificar si se esta intentando dividir por cero
 	bne .Ldiv_ini
-	mov r0, #1				@; c�digo de error
+	mov r0, #1				@; codigo de error
 	b .Ldiv_fin2
 .Ldiv_ini:
 	mov r4, #0				@; R4 es el cociente (q)
 	mov r5, #0				@; R5 es el resto (r)
-	mov r6, #31				@; R6 es �ndice del bucle (de 31 a 0)
+	mov r6, #31				@; R6 es indice del bucle (de 31 a 0)
 	mov r7, #0xff000000
 .Ldiv_for1:
 	tst r0, r7				@; comprobar si hay bits activos en una zona de 8
@@ -68,7 +68,7 @@ _ga_divmod:
 	b .Ldiv_fin1			@; caso especial (numerador = 0 -> q=0 y r=0)
 .Ldiv_for2:
 	mov r7, r0, lsr r6		@; R7 es variable de trabajo j;
-	and r7, #1				@; j = bit i-�simo del numerador; 
+	and r7, #1				@; j = bit i-esimo del numerador; 
 	mov r5, r5, lsl #1		@; r = r << 1;
 	orr r5, r7				@; r = r | j;
 	mov r4, r4, lsl #1		@; q = q << 1;
@@ -77,31 +77,31 @@ _ga_divmod:
 	sub r5, r1				@; r = r - divisor;
 	orr r4, #1				@; q = q | 1;
  .Ldiv_cont:
-	sub r6, #1				@; decrementar �ndice del bucle
+	sub r6, #1				@; decrementar indice del bucle
 	cmp r6, #0
 	bge .Ldiv_for2			@; bucle for-2, mientras i >= 0
 .Ldiv_fin1:
 	str r4, [r2]
 	str r5, [r3]			@; guardar resultados en memoria (por referencia)
-	mov r0, #0				@; c�digo de OK
+	mov r0, #0				@; codigo de OK
 .Ldiv_fin2:
 	pop {r4-r7, pc}
 
 
 	.global _ga_divmodL
-	@;Par�metros
+	@;Parametros
 	@; R0: long long * num
 	@; R1: unsigned int * den
 	@; R2: long long * quo
 	@; R3: unsigned int * mod
 	@;Resultado
-	@; R0: 0 si no hay problema, !=0 si hay error en la divisi�n
+	@; R0: 0 si no hay problema, !=0 si hay error en la division
 _ga_divmodL:
 	push {r4-r6, lr}
 	ldr r4, [r1]			@; R4 = denominador
-	cmp r4, #0				@; verificar si se est� intentando dividir por cero
+	cmp r4, #0				@; verificar si se esta intentando dividir por cero
 	bne .LdivL_ini
-	mov r0, #1				@; c�digo de error
+	mov r0, #1				@; codigo de error
 	b .LdivL_fin
 .LdivL_ini:
 	ldrd r0, [r0]			@; R1:R0 = numerador
@@ -111,24 +111,73 @@ _ga_divmodL:
 	mov r3, #0				@; R3:R2 = denominador
 	bl __aeabi_ldivmod
 	strd r0, [r5]
-	str r2, [r6]			@; guardar resultados en memoria (por referencia)			
-	mov r0, #0				@; c�digo de OK
+	str r2, [r6]			@; guardar resultados en memoria (por referencia)
+	mov r0, #0				@; codigo de OK
 .LdivL_fin:
 	pop {r4-r6, pc}
 
 
 	.global _ga_printf
-	@;Par�metros
+	@;Parametros
 	@; R0: char * format
 	@; R1: unsigned int val1 (opcional)
 	@; R2: unsigned int val2 (opcional)
 _ga_printf:
 	push {r4, lr}
-	ldr r4, =_gd_pidz		@; R4 = direcci�n _gd_pidz
+	ldr r4, =_gd_pidz		@; R4 = direccion _gd_pidz
 	ldr r3, [r4]
-	and r3, #0x3			@; R3 = ventana de salida (z�calo actual MOD 4)
+	and r3, #0xf			@; R3 = ventana de salida (zocalo actual MOD 16)
 	bl _gg_escribir			@; llamada a la funci�n definida en "garlic_graf.c"
 	pop {r4, pc}
+	
+	.global _ga_fopen
+_ga_fopen:
+	push {lr}
+	bl fer_GARLIC_fopen
+	pop {pc}
+	
+	
+	.global _ga_fread
+_ga_fread:
+	push {lr}
+	bl fer_GARLIC_fread
+	pop {pc}
+	
+	
+	.global _ga_fclose
+_ga_fclose:
+	push {lr}
+	bl fer_GARLIC_fclose
+	pop {pc}
+	
+
+
+	.global _ga_wait
+	@;Parametros
+	@; R0: unsigned char mutex
+	@;Resultado
+	@; R0: 1 si se ha bloqueado el proceso, 0 si no lo ha hecho
+_ga_wait:
+	push {lr}
+
+	bl _gp_waitS
+
+	pop {pc}
+
+
+.global _ga_signal
+	@;Parametros
+	@; R0: unsigned char mutex
+	@;Resultado
+	@; R0: 1 si ha desbloqueado un proceso, 0 si no lo ha hecho
+_ga_signal:
+	push {lr}
+
+	bl _gp_signalS
+
+	pop {pc}
+
+
 
 	.global _ga_setChar
 	@;Par�metros
@@ -141,9 +190,75 @@ _ga_setChar:
 	and r3, #0x3			@; R3 = ventana de salida (z�calo actual MOD 4)
 	bl _gg_setChar
 	pop {r2-r4 ,pc}
-	
 
 
+	.global _ga_printchar
+	@;Par�metros
+	@; R0: int vx
+	@; R1: int vy
+	@; R2: char c
+	@; R3: int color
+_ga_printchar:
+	push {r4-r8, lr}
+	mov r6, r0
+	mov r7, r1
+	mov r8, r2
+	ldr r5, =_gd_pidz		@; R5 = direcci�n _gd_pidz
+	ldr r4, [r5]
+	and r4, #0xf			@; R4 = ventana de salida (z�calo actual)
+	push {r4}				@; pasar 4� par�metro (n�m. ventana) por la pila
+	bl _gg_escribirCar
+	add sp, #4				@; eliminar 4� par�metro de la pila
+	pop {r4-r8, pc}
+
+
+	.align 2
+	.global _ga_printmat
+	@;Par�metros
+	@; R0: int vx
+	@; R1: int vy
+	@; R2: char *m[]
+	@; R3: int color
+_ga_printmat:
+	push {r4-r5, lr}
+	ldr r5, =_gd_pidz		@; R5 = direcci�n _gd_pidz
+	ldr r4, [r5]
+	and r4, #0xf			@; R4 = ventana de salida (z�calo actual)
+	push {r4}				@; pasar 4� par�metro (n�m. ventana) por la pila
+	bl _gg_escribirMat
+	add sp, #4				@; eliminar 4� par�metro de la pila
+	pop {r4-r5, pc}
+
+
+	.global _ga_delay
+	@;Par�metros
+	@; R0: int nsec
+_ga_delay:
+	push {r2-r3, lr}
+	ldr r3, =_gd_pidz		@; R3 = direcci�n _gd_pidz
+	ldr r2, [r3]
+	and r2, #0xf			@; R2 = z�calo actual
+	cmp r0, #0
+	bhi .Ldelay1
+	bl _gp_WaitForVBlank	@; si nsec = 0, solo desbanca el proceso
+	b .Ldelay2				@; y salta al final de la rutina
+.Ldelay1:
+	cmp r0, #600
+	movhi r0, #600			@; limitar el n�mero de segundos a 600 (10 minutos)
+	bl _gp_retardarProc
+.Ldelay2:
+	pop {r2-r3, pc}
+
+
+	.global _ga_clear
+_ga_clear:
+	push {r0-r1, lr}
+	ldr r1, =_gd_pidz
+	ldr r0, [r1]
+	and r0, #0xf			@; R0 = z�calo actual
+	mov r1, #1				@; R1 = 1 -> 16 ventanas
+	bl _gs_borrarVentana
+	pop {r0-r1, pc}
 
 
 .end

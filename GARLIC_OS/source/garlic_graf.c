@@ -2,23 +2,23 @@
 
 	"garlic_graf.c" : fase 1 / programador G
 
-	Funciones de gestión del entorno gráfico (ventanas de texto), para GARLIC 1.0
+	Funciones de gestiï¿½n del entorno grï¿½fico (ventanas de texto), para GARLIC 1.0
 
 ------------------------------------------------------------------------------*/
 #include <nds.h>
 
-#include "garlic_system.h"	// definición de funciones y variables de sistema
-#include "garlic_font.h"	// definición gráfica de caracteres
+#include "garlic_system.h"	// definiciï¿½n de funciones y variables de sistema
+#include "garlic_font.h"	// definiciï¿½n grï¿½fica de caracteres
 
-/* definiciones para realizar cálculos relativos a la posición de los caracteres
-	dentro de las ventanas gráficas, que pueden ser 4 o 16 */
-#define NVENT	4				// número de ventanas totales
-#define PPART	2				// número de ventanas horizontales o verticales
+/* definiciones para realizar cï¿½lculos relativos a la posiciï¿½n de los caracteres
+	dentro de las ventanas grï¿½ficas, que pueden ser 4 o 16 */
+#define NVENT	4				// nï¿½mero de ventanas totales
+#define PPART	2				// nï¿½mero de ventanas horizontales o verticales
 								// (particiones de pantalla)
 #define VCOLS	32				// columnas y filas de cualquier ventana
 #define VFILS	24
-#define PCOLS	VCOLS * PPART	// número de columnas totales (en pantalla)
-#define PFILS	VFILS * PPART	// número de filas totales (en pantalla)
+#define PCOLS	VCOLS * PPART	// nï¿½mero de columnas totales (en pantalla)
+#define PFILS	VFILS * PPART	// nï¿½mero de filas totales (en pantalla)
 
 #define LOWER_16_BITS_MASK 0xFFFF // Mascara para obtener los 16 bits bajos de pControl
 #define TEXT_LIMIT (VCOLS*3)		// Limite de texto para el metodo _gg_escribir
@@ -26,8 +26,8 @@
 int bg2A, bg3A;
 int MapPtr2A;
 
-/* _gg_generarMarco: dibuja el marco de la ventana que se indica por parámetro*/
-void _gg_generarMarco(int v)
+/* _gg_generarMarco: dibuja el marco de la ventana que se indica por parï¿½metro*/
+void _gg_generarMarco(int v, int color)
 {	
 	int VIzq=96;
 	int HAbajo=97;
@@ -75,31 +75,32 @@ void _gg_generarMarco(int v)
 }
 
 
-/* _gg_iniGraf: inicializa el procesador gráfico A para GARLIC 1.0 */
+/* _gg_iniGraf: inicializa el procesador grï¿½fico A para GARLIC 1.0 */
 void _gg_iniGrafA()
 {
-	videoSetMode(MODE_5_2D); // inicializar el procesador gráfico principal (A) en modo 5, con salida en la pantalla superior de la NDS
-	vramSetBankA(VRAM_A_MAIN_BG_0x06000000); // reservar el banco de memoria de vídeo A
+	videoSetMode(MODE_5_2D); // inicializar el procesador grï¿½fico principal (A) en modo 5, con salida en la pantalla superior de la NDS
+	vramSetBankA(VRAM_A_MAIN_BG_0x06000000); // reservar el banco de memoria de vï¿½deo A
 	
-	//inicializar los fondos gráficos 2 y 3 en modo Extended Rotation, con un tamaño total de 512x512 píxeles
+	//inicializar los fondos grï¿½ficos 2 y 3 en modo Extended Rotation, con un tamaï¿½o total de 512x512 pï¿½xeles
 	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_512x512, 0, 3);
 	bg3A = bgInit(3, BgType_ExRotation , BgSize_ER_512x512, 4, 3);
 	
 	MapPtr2A = (int) bgGetMapPtr(bg2A);
 	
-	//fijar el fondo 3 como más prioritario que el fondo 2
+	//fijar el fondo 3 como mï¿½s prioritario que el fondo 2
 	bgSetPriority(bg3A,0);
 	bgSetPriority(bg2A,1);
 	
-	decompress(garlic_fontTiles, bgGetGfxPtr(bg3A) ,LZ77Vram); //descomprimir el contenido de la fuente de letras sobre una zona adecuada de la memoria de vídeo
+	decompress(garlic_fontTiles, bgGetGfxPtr(bg3A) ,LZ77Vram); //descomprimir el contenido de la fuente de letras sobre una zona adecuada de la memoria de vï¿½deo
 	dmaCopy(garlic_fontPal, BG_PALETTE, sizeof(garlic_fontPal)); //copiar la paleta de colores de la fuente de letras sobre la zona de memoria correspondiente
 	
+	int color=0; //FASE 2
 	//generar los marcos de las ventanas de texto en el fondo 3
 	for(int i=0; i<NVENT; i++) {
-	_gg_generarMarco(i);
+	_gg_generarMarco(i, color);
 	}
 	
-	//escalar los fondos 2 y 3 para que se ajusten exactamente a las dimensiones de una pantalla de la NDS (reducción al 50%)
+	//escalar los fondos 2 y 3 para que se ajusten exactamente a las dimensiones de una pantalla de la NDS (reducciï¿½n al 50%)
 	bgSetScale(bg2A, 512, 512);
 	bgSetScale(bg3A, 512, 512);
 	
@@ -110,17 +111,17 @@ void _gg_iniGrafA()
 
 /* _gg_procesarFormato: copia los caracteres del string de formato sobre el
 					  string resultante, pero identifica las marcas de formato
-					  precedidas por '%' e inserta la representación ASCII de
-					  los valores indicados por parámetro.
-	Parámetros:
-		formato	->	string con marcas de formato (ver descripción _gg_escribir);
-		val1, val2	->	valores a transcribir, sean número de código ASCII (%c),
-					un número natural (%d, %x) o un puntero a string (%s);
+					  precedidas por '%' e inserta la representaciï¿½n ASCII de
+					  los valores indicados por parï¿½metro.
+	Parï¿½metros:
+		formato	->	string con marcas de formato (ver descripciï¿½n _gg_escribir);
+		val1, val2	->	valores a transcribir, sean nï¿½mero de cï¿½digo ASCII (%c),
+					un nï¿½mero natural (%d, %x) o un puntero a string (%s);
 		resultado	->	mensaje resultante.
-	Observación:
+	Observaciï¿½n:
 		Se asume que el string resultante tiene reservado espacio de memoria
 		suficiente para albergar todo el mensaje, incluyendo los caracteres
-		literales del formato y la transcripción en código ASCII de los valores.
+		literales del formato y la transcripciï¿½n en cï¿½digo ASCII de los valores.
 */
 void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 																char *resultado)
@@ -227,30 +228,30 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 	resultado[i] = '\0'; //final del string
 }
 /* _gg_escribir: escribe una cadena de caracteres en la ventana indicada;
-	Parámetros:
+	Parï¿½metros:
 		formato	->	string de formato:
-					admite '\n' (salto de línea), '\t' (tabulador, 4 espacios)
-					y códigos entre 32 y 159 (los 32 últimos son caracteres
-					gráficos), además de marcas de format %c, %d, %h y %s (máx.
+					admite '\n' (salto de lï¿½nea), '\t' (tabulador, 4 espacios)
+					y cï¿½digos entre 32 y 159 (los 32 ï¿½ltimos son caracteres
+					grï¿½ficos), ademï¿½s de marcas de format %c, %d, %h y %s (mï¿½x.
 					2 marcas por string)
 		val1	->	valor a sustituir en la primera marca de formato, si existe
 		val2	->	valor a sustituir en la segunda marca de formato, si existe
-					- los valores pueden ser un código ASCII (%c), un valor
+					- los valores pueden ser un cï¿½digo ASCII (%c), un valor
 					  natural de 32 bits (%d, %x) o un puntero a string (%s)
-		ventana	->	número de ventana (0..3)
+		ventana	->	nï¿½mero de ventana (0..3)
 */
 void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int ventana)
 {
 	char resultado[TEXT_LIMIT]=""; //mensaje resultante,32 caracterees por linea, 3 lineas de texto (limitamos a 3 lineas  de texto)
 	_gg_procesarFormato(formato, val1, val2, resultado);
 	
-	// 16 bits altos del pControl: número de línea (0..23)
+	// 16 bits altos del pControl: nï¿½mero de lï¿½nea (0..23)
 	// 16 bits bajos del pControl: caracteres pendientes(0..32)
 	//numero de caracteres de la ventana actual
 	//obtenemos los 16 bits bajos de pControl
 	int nChars = _gd_wbfs[ventana].pControl & LOWER_16_BITS_MASK; //AND->Si los dos bits son 1 los pone a 1
 	int filaActual = _gd_wbfs[ventana].pControl >> 16; //Desplazamos 16 bits a la derecha, borrando asi los 16 menos significativos
-	//Ahora los mas bajos serán los que antes eran los 16 altos, filaActual=16 bits mas altos de pControl
+	//Ahora los mas bajos serï¿½n los que antes eran los 16 altos, filaActual=16 bits mas altos de pControl
 	int i=0; 
 	
 	char car = resultado[i];	//caracter actual
@@ -258,24 +259,24 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		if(car == '\t'){
 			int espaciosRestantes = 4 - (nChars % 4); //Calculo de espacios que faltan
 			while(espaciosRestantes > 0 && nChars < VCOLS) {
-				_gd_wbfs[ventana].pChars[nChars]=' '; //se añaden espacios hasta proxima columna con indice multiplo de 4
+				_gd_wbfs[ventana].pChars[nChars]=' '; //se aï¿½aden espacios hasta proxima columna con indice multiplo de 4
 				nChars++;
 				espaciosRestantes--;
 		}
 		
 		}
 		/*
-		else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> añadir caracter al buffer de la ventana
-			_gd_wbfs[ventana].pChars[nChars] = car; //se añade el caracter
+		else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> aï¿½adir caracter al buffer de la ventana
+			_gd_wbfs[ventana].pChars[nChars] = car; //se aï¿½ade el caracter
 			nChars++;
 		}
 		*/
 		else if(car == '\n' || nChars == VCOLS) {
 			/* _gp_WaitForVBlank: sustituto de swiWaitForVBlank() para Garlic; */
-			//_gp_WaitForVBlank();
-			swiWaitForVBlank();
+			_gp_WaitForVBlank();
+			
 			if(filaActual==VFILS) {
-				_gg_desplazar(ventana); //desplaçament dels codi de rajola (scroll)
+				_gg_desplazar(ventana); //desplaï¿½ament dels codi de rajola (scroll)
 				filaActual--;
 			}
 			_gg_escribirLinea(ventana, filaActual, nChars); //transfereix del buffer al mapa de rajoles 
@@ -303,7 +304,7 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 			}
 			
 			simbol = (s1<<4); // mueve 4 posiciones a la izquierda
-			simbol += s2;	//añade el segundo valor
+			simbol += s2;	//aï¿½ade el segundo valor
 			
 			if (simbol >= 128 && simbol <=255) {
 				_gd_wbfs[ventana].pChars[nChars]=simbol;
@@ -312,8 +313,8 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 			}
 			i=i+3;
 		}
-		else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> añadir caracter al buffer de la ventana
-			_gd_wbfs[ventana].pChars[nChars] = car; //se añade el caracter
+		else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> aï¿½adir caracter al buffer de la ventana
+			_gd_wbfs[ventana].pChars[nChars] = car; //se aï¿½ade el caracter
 			nChars++;
 		}
 		
@@ -326,7 +327,7 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		
 }
 
-	void _gg_setChar(unsigned char n, unsigned char *buffer) {
+void _gg_setChar(unsigned char n, unsigned char *buffer) {
 	if(n>=128 && n<=255){
 		int base = 0x06000000; 				
 		//16KB * 3 = 48 KB -> 48*1024= 49152-> 0xC000
@@ -335,5 +336,4 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		dmaCopy(buffer, (u16*)desplazamiento, 64); //copiamos la baldosa en la posicion de la memoria
 		bgUpdate();
 	}
-	}
-
+}
