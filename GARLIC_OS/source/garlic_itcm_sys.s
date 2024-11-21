@@ -1,6 +1,6 @@
 @;==============================================================================
 @;
-@;	"garlic_itcm_sys.s":	código de las rutinas de soporte al sistema.
+@;	"garlic_itcm_sys.s":	cï¿½digo de las rutinas de soporte al sistema.
 @;
 @;==============================================================================
 
@@ -10,115 +10,115 @@
 	.align 2
 
 	.global _gs_num2str_dec
-	@; permite convertir un número natural de 32 bits a su representación
+	@; permite convertir un nï¿½mero natural de 32 bits a su representaciï¿½n
 	@; en decimal, dentro de un string acabado en cero ('\0');
-	@;Parámetros
+	@;Parï¿½metros
 	@; R0: char * numstr
 	@; R1: unsigned int length
 	@; R2: unsigned int num
 	@;Resultado
-	@; R0: 0 si no hay problema, !=0 si el número no cabe en el string
+	@; R0: 0 si no hay problema, !=0 si el nï¿½mero no cabe en el string
 _gs_num2str_dec:
 	push {r1-r8, lr}
 	cmp r1, #1
-	bhi .Ln1s_cont1			@; verificar si hay espacio para centinela + 1 dígito
+	bhi .Ln1s_cont1			@; verificar si hay espacio para centinela + 1 dï¿½gito
 	mov r0, #-1
-	b .Ln1s_fin				@; retornar con código de error en R0
+	b .Ln1s_fin				@; retornar con cï¿½digo de error en R0
 .Ln1s_cont1:
 	mov r6, r0				@; R6 = puntero a string de resultado
-	mov r7, r1				@; R7 = índice carácter (inicialmente es la longitud del string)
-	mov r8, r2				@; R8 = número a transcribir
+	mov r7, r1				@; R7 = ï¿½ndice carï¿½cter (inicialmente es la longitud del string)
+	mov r8, r2				@; R8 = nï¿½mero a transcribir
 	mov r3, #0
 	sub r7, #1
-	strb r3, [r6, r7]		@; guardar final de string (0) en última posición
+	strb r3, [r6, r7]		@; guardar final de string (0) en ï¿½ltima posiciï¿½n
 .Ln1s_while:	
 	cmp r7, #0				@; repetir mientras quede espacio en el string
 	beq .Ln1s_cont2
 	sub sp, #8				@; reservar espacio en la pila para resultados
 	mov r0, r8				@; pasar numerador por valor
 	mov r1, #10				@; pasar denominador por valor
-	mov r2, sp				@; pasar dirección para albergar el cociente
-	add r3, sp, #4			@; pasar dirección para albergar el resto
+	mov r2, sp				@; pasar direcciï¿½n para albergar el cociente
+	add r3, sp, #4			@; pasar direcciï¿½n para albergar el resto
 	bl _ga_divmod
 	pop {r4-r5}				@; R4 = cociente, R5 = resto
-	add r5, #48				@; añadir base de códigos ASCII para dígitos numéricos
+	add r5, #48				@; aï¿½adir base de cï¿½digos ASCII para dï¿½gitos numï¿½ricos
 	sub r7, #1
-	strb r5, [r6, r7]		@; almacenar código ASCII en vector
-	mov r8, r4				@; actualizar valor del número a convertir
-	cmp r8, #0				@; repetir mientras el número sea diferente de 0
+	strb r5, [r6, r7]		@; almacenar cï¿½digo ASCII en vector
+	mov r8, r4				@; actualizar valor del nï¿½mero a convertir
+	cmp r8, #0				@; repetir mientras el nï¿½mero sea diferente de 0
 	bne .Ln1s_while
 .Ln1s_pad:
 	cmp r7, #0				@; bucle para llenar de espacios en blanco la
 	beq .Ln1s_cont2			@; parte restante del inicio del string
 	mov r3, #' '
 	sub r7, #1
-	strb r3, [r6, r7]		@; almacenar código ASCII ' ' en vector
+	strb r3, [r6, r7]		@; almacenar cï¿½digo ASCII ' ' en vector
 	b .Ln1s_pad
 .Ln1s_cont2:
-	mov r0, r8				@; esto indicará si el numero se ha podido codificar
+	mov r0, r8				@; esto indicarï¿½ si el numero se ha podido codificar
 .Ln1s_fin:					@; completamente en el string (si R0 = 0)
 	pop {r1-r8, pc}
 
 
 
 	.global _gs_num2str_hex
-	@; permite convertir un número natural de 32 bits a su representación en
+	@; permite convertir un nï¿½mero natural de 32 bits a su representaciï¿½n en
 	@; hexadecimal, dentro de un string acabado en cero ('\0');	
-	@;Parámetros
+	@;Parï¿½metros
 	@; R0: char * numstr
 	@; R1: unsigned int length
 	@; R2: unsigned int num
 	@;Resultado
-	@; R0: 0 si no hay problema, !=0 si el número no cabe en el string
+	@; R0: 0 si no hay problema, !=0 si el nï¿½mero no cabe en el string
 _gs_num2str_hex:
 	push {r1-r4, lr}
 	cmp r1, #1
-	bhi .Ln2s_cont1			@; verificar si hay espacio para centinela + 1 dígito
+	bhi .Ln2s_cont1			@; verificar si hay espacio para centinela + 1 dï¿½gito
 	mov r0, #-1
-	b .Ln2s_fin				@; retornar con código de error en R0
+	b .Ln2s_fin				@; retornar con cï¿½digo de error en R0
 .Ln2s_cont1:
 	mov r3, #0
 	sub r1, #1
-	strb r3, [r0, r1]		@; guardar final de string (0) en última posición
+	strb r3, [r0, r1]		@; guardar final de string (0) en ï¿½ltima posiciï¿½n
 .Ln2s_while:	
 	cmp r1, #0				@; repetir mientras quede espacio en el string
 	beq .Ln2s_cont2
-	and r4, r2, #0x0F		@; obtener el dígito hexa de menos peso
-	cmp r4, #10				@; si dígito hexa menor que 10, saltar a tratamiento
-	blo .Ln2s_dec			@; de dígitos decimales
+	and r4, r2, #0x0F		@; obtener el dï¿½gito hexa de menos peso
+	cmp r4, #10				@; si dï¿½gito hexa menor que 10, saltar a tratamiento
+	blo .Ln2s_dec			@; de dï¿½gitos decimales
 	add r4, #7				@; ajuste para letras 'A'..'F' (65 - 10 - 48)
 .Ln2s_dec:
-	add r4, #48				@; añadir base de códigos ASCII para números
+	add r4, #48				@; aï¿½adir base de cï¿½digos ASCII para nï¿½meros
 	sub r1, #1
-	strb r4, [r0, r1]		@; almacenar código ASCII en vector
-	mov r2, r2, lsr #4		@; actualizar valor del número a convertir
-	cmp r2, #0				@; repetir mientras el número sea diferente de 0
+	strb r4, [r0, r1]		@; almacenar cï¿½digo ASCII en vector
+	mov r2, r2, lsr #4		@; actualizar valor del nï¿½mero a convertir
+	cmp r2, #0				@; repetir mientras el nï¿½mero sea diferente de 0
 	bne .Ln2s_while
 .Ln2s_pad:
 	cmp r1, #0				@; bucle para llenar de ceros la
 	beq .Ln2s_cont2			@; parte restante del inicio del string
 	mov r3, #'0'
 	sub r1, #1
-	strb r3, [r0, r1]		@; almacenar código ASCII '0' en vector
+	strb r3, [r0, r1]		@; almacenar cï¿½digo ASCII '0' en vector
 	b .Ln2s_pad
 .Ln2s_cont2:
-	mov r0, r2				@; esto indicará si el numero se ha podido codificar
+	mov r0, r2				@; esto indicarï¿½ si el numero se ha podido codificar
 .Ln2s_fin:					@; completamente en el string (si R0 = 0)
 	pop {r1-r4, pc}
 
 
 
 	.global _gs_copiaMem
-	@; copia un bloque de memoria desde una dirección fuente a otra dirección
-	@; destino, el número de bytes indicado;
-	@;Parámetros:
-	@; R0: dirección fuente (debe ser múltiplo de 4)
-	@; R1: dirección destino (debe ser múltiplo de 4)
-	@; R2: número de bytes a copiar
+	@; copia un bloque de memoria desde una direcciï¿½n fuente a otra direcciï¿½n
+	@; destino, el nï¿½mero de bytes indicado;
+	@;Parï¿½metros:
+	@; R0: direcciï¿½n fuente (debe ser mï¿½ltiplo de 4)
+	@; R1: direcciï¿½n destino (debe ser mï¿½ltiplo de 4)
+	@; R2: nï¿½mero de bytes a copiar
 _gs_copiaMem:
 	push {r0-r12, lr}
 	and r11, r2, #3				@; R11 = contador de bytes residuales
-	mov r2, r2, lsr #2			@; convierte número bytes en número words
+	mov r2, r2, lsr #2			@; convierte nï¿½mero bytes en nï¿½mero words
     and  r12, r2, #7     		@; R12 = contador de words residuales
     movs r2, r2, lsr #3  		@; R2 = contador de bloques de 8 words
     beq  .LcopMem_reswords
