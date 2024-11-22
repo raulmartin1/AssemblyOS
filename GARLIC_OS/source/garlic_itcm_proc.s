@@ -11,7 +11,7 @@
 	.align 2
 	
 	.global _gp_WaitForVBlank
-	@; rutina para pausar el procesador mientras no se produzca una interrupci�n
+	@; rutina para pausar el procesador mientras no se produzca una interrupcion
 	@; de retroceso vertical (VBL); es un sustituto de la "swi #5" que evita
 	@; la necesidad de cambiar a modo supervisor en los procesos GARLIC;
 _gp_WaitForVBlank:
@@ -36,7 +36,7 @@ _gp_IntrMain:
 	ldr	r1, [r12, #0x0C]	@; R1 = REG_IF (mascara de bits con int. activas)
 	and r1, r1, r2			@; filtrar int. activas con int. permitidas
 	ldr	r2, =irqTable
-.Lintr_find:				@; buscar manejadores de interrupciones espec�ficos
+.Lintr_find:				@; buscar manejadores de interrupciones especificos
 	ldr r0, [r2, #4]		@; R0 = mascara de int. del manejador indexado
 	cmp	r0, #0				@; si mascara = cero, fin de vector de manejadores
 	beq	.Lintr_setflags		@; (abandonar bucle de busqueda de manejador)
@@ -70,15 +70,16 @@ _gp_IntrMain:
 _gp_rsiVBL:
 	push {r4-r7, lr}
 
-	@; Incrementar contador de tics general
+	@; Incrementar contador de tics general y actualizar contadores DELAY
 	ldr r4, =_gd_tickCount		@; cargar direccion mem contador tics
 	ldr r5, [r4]				@; obtener su valor
 	add r5, #1					@; incrementar en 1
 	str r5, [r4]				@; guardar nuevo valor
-	@; Fin incrementar tics
+	bl _gp_actualizarDelay		@; actualizar contadores de DELAY
+	@; Fin incrementar tics y actualizar DELAY
 
 	@; Detectar si quedan procesos en la cola RDY
-	ldr r4, =_gd_nReady			@; cargar direccion mem num RDY
+	ldr r4, =_gd_nReady			@; cargar direccion _gd_nReady
 	ldr r5, [r4]				@; obtener su valor
 	cmp r5, #0					@; comprobar si es 0
 	beq .LendVBL				@; si lo es, acabar multiplexacion
@@ -88,6 +89,7 @@ _gp_rsiVBL:
 	@; Comprobar proceso actual para salvar y/o restaurar contextos
 	ldr r4, =_gd_pidz			@; cargar direccion del proceso actual
 	ldr r5, [r4]				@; obtener su valor
+	bic r5, #0x80000000			@; poner a 0 el bit de mas peso para no interferir
 	cmp r5, #0					@; comprobar si es el SO
 	moveq r7, #1				@; si lo es, guardar un 1 en R7 para indicar que hay que guardar el contexto
 	beq .LcontextChange			@; y saltar a cambio de contexto
@@ -113,70 +115,6 @@ _gp_rsiVBL:
 	pop {r4-r7, pc}
 
 
-
-	.global _gp_waitS
-_gp_waitS:
-	push {r1-r2, lr}
-
-	@; Comprobar que el semaforo existe
-	cmp r0, #7				@; comprobamos que el semaforo indicado no pasa de 7 (rango es 0-7)
-	movhi r0, #0			@; si se pasa, mover un 0 a R0
-	bhi .LreturnWait		@; y salir de la rutina indicando que no se ha desbloqueado ningun proceso
-
-	@; Obtener estado del semaforo
-	ldr r1, =_gd_mutex		@; cargar direccion del vector de semaforos
-	ldrb r2, [r1, r0]		@; obtener valor del semaforo indicado por parametro
-
-	@; Comprobar su valor
-	cmp r2, #0				@; comprobar si el semaforo es 0 (bloqueado)
-	moveq r0, #0			@; mover un 0 a R0 para devolverlo como resultado
-	beq .LreturnWait		@; acabar rutina indicando que el semaforo ya estaba bloqueado
-
-	@; Bucle para bloquear proceso hasta que el semaforo se libere
-	mov r2, #0				@; en caso de estar a 1 (libre), mover un 0 en R2
-	strb r2, [r1, r0]		@; y guardarlo en el semaforo indicado por parametro
-.LcheckLoop:
-	ldrb r2, [r1, r0]		@; obtener valor del semaforo nuevamente
-	cmp r2, #0				@; comprobar si sigue a 0 (bloqueado)
-	movhi r0, #1			@; en caso de estar a 1 (libre), mover un 1 en R1
-	bhi .LreturnWait		@; y acabar la rutina indicando que el proceso se ha bloqueado correctamente
-	bl _gp_WaitForVBlank	@; si no, esperar retroceso vertical
-	b .LcheckLoop			@; y volver a iterar el bucle
-
-.LreturnWait:
-
-	pop {r1-r2, lr}
-
-
-	.global _gp_signalS
-_gp_signalS:
-	push {r1-r2, lr}
-
-	@; Comprobar que el semaforo existe
-	cmp r0, #7				@; comprobamos que el semaforo indicado no pasa de 7 (rango es 0-7)
-	movhi r0, #0			@; si se pasa, mover un 0 a R0
-	bhi .LreturnSignal		@; y salir de la rutina indicando que no se ha desbloqueado ningun proceso
-
-	@; Obtener estado del semaforo
-	ldr r1, =_gd_mutex		@; cargar direccion del vector de semaforos
-	ldrb r2, [r1, r0]		@; obtener valor del semaforo indicado por parametro
-
-	@; Comprobar su valor
-	cmp r2, #0				@; comprobar si el semaforo es 0 (bloqueado)
-	movhi r0, #0			@; en caso que no lo sea, mover un 0 a R0
-	bhi .LreturnSignal		@; y salir de la rutina indicando que no se ha desbloqueado ningun proceso
-
-	@; Desbloquear proceso (liberar semaforo)
-	mov r2, #1				@; en caso que si, mover un 1 en R2
-	strb r2, [r1, r0]		@; y guardarlo en el semaforo indicado por parametro
-	mov r0, #1				@; mover un 1 a R0 para indicar que se ha desbloqueado un proceso
-
-.LreturnSignal:
-
-	pop {r1-r2, pc}
-
-
-
 	@; Rutina para salvar el estado del proceso interrumpido en la entrada
 	@; correspondiente del vector _gd_pcbs[];
 	@;Parametros
@@ -190,6 +128,8 @@ _gp_salvarProc:
 
 	@; Guardar zocalo del proceso a la cola de RDY
 	ldr r8, [r6]			@; obtener valor de _gd_pidz
+	tst r8, #0x80000000		@; ver si el bit de mas peso esta activo
+	bne .LskipRDY			@; si el bit esta activo (flag Z = 0) no guardar proceso a la cola RDY
 	and r8, #0xF			@; quedarse con los 4 bits bajos (zocalo)
 	ldr r9, =_gd_qReady		@; cargar direccion de la cola de RDY
 	strb r8, [r9, r5]		@; guardar zocalo en la cola RDY
@@ -200,6 +140,7 @@ _gp_salvarProc:
 	str r5, [r4]			@; guardar nuevo numero en memoria
 	@; Fin incrementar variable nReady
 
+.LskipRDY:
 	@; Guardar registros en el PCB y la pila
 		@; Guardar R15(PC) en el PCB
 	ldr r9, =_gd_pcbs		@; cargar direccion base e los PCBs
@@ -245,7 +186,7 @@ _gp_salvarProc:
 
 	sub r8, #8				@; vamos a la posicion de R1
 	ldmda r8, {r10, r11}	@; guardamos R1 y R0
-	stmdb r13!, {r10, r11}	@; y los apilamos tambien
+	stmdb r13!, {r10, r11}	@; y los apilamos
 
 		@; Guardar nuevo SP en el PCB
 	ldr r8, =_gd_pcbs		@; obtenemos direccion de garlicPCB
@@ -359,13 +300,145 @@ _gp_restaurarProc:
 	pop {r8-r11, pc}
 
 
+	.global _gp_waitS
+_gp_waitS:
+	push {r1-r2, lr}
+
+	@; Comprobar que el semaforo existe
+	cmp r0, #7				@; comprobamos que el semaforo indicado no pasa de 7 (rango es 0-7)
+	movhi r0, #0			@; si se pasa, mover un 0 a R0
+	bhi .LreturnWait		@; y salir de la rutina indicando que no se ha bloqueado ningun proceso
+
+	@; Obtener estado del semaforo
+	ldr r1, =_gd_mutex		@; cargar direccion del vector de semaforos
+	ldrb r2, [r1, r0]		@; obtener valor del semaforo indicado por parametro
+
+	@; Comprobar su valor
+	cmp r2, #0				@; comprobar si el semaforo es 0 (bloqueado)
+	moveq r0, #0			@; mover un 0 a R0 para devolverlo como resultado
+	beq .LreturnWait		@; acabar rutina indicando que el semaforo ya estaba bloqueado
+
+	@; Bucle para bloquear proceso hasta que el semaforo se libere
+	mov r2, #0				@; en caso de estar a 1 (libre), mover un 0 en R2
+	strb r2, [r1, r0]		@; y guardarlo en el semaforo indicado por parametro
+.LcheckLoop:
+	ldrb r2, [r1, r0]		@; obtener valor del semaforo nuevamente
+	cmp r2, #0				@; comprobar si sigue a 0 (bloqueado)
+	movhi r0, #1			@; en caso de estar a 1 (libre), mover un 1 en R1
+	bhi .LreturnWait		@; y acabar la rutina indicando que el proceso se ha bloqueado correctamente
+	bl _gp_WaitForVBlank	@; si no, esperar retroceso vertical
+	b .LcheckLoop			@; y volver a iterar el bucle
+
+.LreturnWait:
+
+	pop {r1-r2, lr}
+
+
+	.global _gp_signalS
+_gp_signalS:
+	push {r1-r2, lr}
+
+	@; Comprobar que el semaforo existe
+	cmp r0, #7				@; comprobamos que el semaforo indicado no pasa de 7 (rango es 0-7)
+	movhi r0, #0			@; si se pasa, mover un 0 a R0
+	bhi .LreturnSignal		@; y salir de la rutina indicando que no se ha desbloqueado ningun proceso
+
+	@; Obtener estado del semaforo
+	ldr r1, =_gd_mutex		@; cargar direccion del vector de semaforos
+	ldrb r2, [r1, r0]		@; obtener valor del semaforo indicado por parametro
+
+	@; Comprobar su valor
+	cmp r2, #0				@; comprobar si el semaforo es 0 (bloqueado)
+	movhi r0, #0			@; en caso que no lo sea, mover un 0 a R0
+	bhi .LreturnSignal		@; y salir de la rutina indicando que no se ha desbloqueado ningun proceso
+
+	@; Desbloquear proceso (liberar semaforo)
+	mov r2, #1				@; en caso que si, mover un 1 en R2
+	strb r2, [r1, r0]		@; y guardarlo en el semaforo indicado por parametro
+	mov r0, #1				@; mover un 1 a R0 para indicar que se ha desbloqueado un proceso
+
+.LreturnSignal:
+
+	pop {r1-r2, pc}
+
+
 	@; Rutina para actualizar la cola de procesos retardados, poniendo en
-	@; cola de READY aquellos cuyo n�mero de tics de retardo sea 0
+	@; cola de READY aquellos cuyo numero de tics de retardo sea 0
 _gp_actualizarDelay:
-	push {lr}
+	push {r0-r9, lr}
 
+	@; Obtener direcciones y valores necesarios
+	ldr r0, =_gd_qDelay		@; cargar direccion de _gd_qDelay
+	ldr r1, =_gd_nDelay		@; cargar direccion de _gd_nDelay
+	ldr r2, [r1]			@; obtener valor de _gd_nDelay
+	cmp r2, #0				@; comprobar si hay algun proceso en DELAY
+	beq .LendCheck			@; si no los hay, no hacer nada
+	mov r9, r2				@; guardar una copia de R2 en R9 para mas adelante
+	mov r3, #0				@; inicializar contador R3 a 0
 
-	pop {pc}
+	@; Decrementar todos los contadores 1 tick
+.LcheckTicks:
+	ldr r4, [r0, r3]		@; obtener elemento con indice R3 de la cola DELAY
+	ldr r8, =#0xFFFF		@; mascara para los 16 bits bajos
+	and r5, r4, r8			@; quedarse con los 16 bits bajos
+	cmp r5, #0				@; comprobar si los ticks son 0
+	beq .LdelayToReady		@; en caso de ser 0, mover proceso a cola READY
+	subhi r4, #1			@; en caso de que no, restarle 1
+	strhi r4, [r0, r3]		@; y guardar el nuevo valor
+.Lcontinue:
+	add r3, #1				@; sumar 1 al indice
+	cmp r3, r2				@; comprobar si aun quedan procesos en la cola DELAY
+	blo .LcheckTicks		@; y repetir bucle
+	b .LshiftProcs			@; finalmente, saltar a desplazar los procesos restantes al principio de la cola
+
+	@; Mover proceso a cola READY
+.LdelayToReady:
+	ldr r6, =_gd_qReady		@; cargar direccion de _gd_qReady
+	ldr r7, =_gd_nReady		@; cargar direccion de _gd_nReady
+	ldr r8, [r7]			@; obtener valor de _gd_nReady
+	and r5, r4, #0xFF000000	@; quedarse con los 8 bits altos
+	mov r5, r5, lsr #24		@; desplazar los 8 bits altos a los 8 bits bajos
+	strb r5, [r6, r8]		@; guardar zocalo (R5) en la cola READY (R6) en el indice correspondiente (R8)
+	add r8, #1				@; incrementar numero de procesos en la cola READY
+	str r8, [r7]			@; guardar nuevo numero de procesos READY
+	mov r6, #0				@; guardar un 0 en R6
+	str r6, [r0, r3]		@; y borrar el proceso de la cola de DELAY
+	sub r9, #1				@; restar 1 al numero de procesos en la cola DELAY (en la copia que esta en R9)
+	b .Lcontinue			@; y seguir con los demas procesos
+
+	@; desplazar procesos restantes hacia delante una posicion
+.LshiftProcs:
+	str r9, [r1]			@; primero actualizar el numero de procesos restantes a la cola DELAY
+	mov r8, #0				@; inicializar un contador para reducir iteraciones
+	mov r2, #0				@; inicializar R2 a 0 (primer elemento)
+
+.LforLoop:
+	cmp r8, r9
+	beq .LendCheck
+	cmp r2, #15				@; comprobamos si ya hemos visitado todas las posiciones
+	beq .LendCheck
+	ldr r4, [r0, r2]		@; obtener el valor del elemento actual
+	cmp r4, #0
+	addne r2, #1
+	addne r8, #1
+	bne .LforLoop
+
+	add r3, r2, #1
+.LforLoop2:
+	cmp r3, #15
+	bhi .LendCheck
+	ldr r5, [r0, r3]		@; obtener valor del siguiente elemento
+	cmp r5, #0
+	addeq r3, #1
+	beq .LforLoop2
+	str r5, [r0, r2]
+	add r2, #1
+	add r8, #1
+	b .LforLoop
+	
+.LendCheck:
+
+	pop {r0-r9, pc}
 
 
 	.global _gp_numProc
@@ -376,17 +449,17 @@ _gp_numProc:
 
 	mov r0, #1				@; contar siempre 1 proceso en RUN
 	ldr r1, =_gd_nReady
-	ldr r2, [r1]			@; R2 = n�mero de procesos en cola de READY
-	add r0, r2				@; a�adir procesos en READY
+	ldr r2, [r1]			@; R2 = numero de procesos en cola de READY
+	add r0, r2				@; anadir procesos en READY
 	ldr r1, =_gd_nDelay
-	ldr r2, [r1]			@; R2 = n�mero de procesos en cola de DELAY
-	add r0, r2				@; a�adir procesos retardados
+	ldr r2, [r1]			@; R2 = numero de procesos en cola de DELAY
+	add r0, r2				@; anadir procesos retardados
 
 	pop {r1-r2, pc}
 
 
 	.global _gp_crearProc
-	@; prepara un proceso para ser ejecutado, creando su entorno de ejecuci�n y
+	@; prepara un proceso para ser ejecutado, creando su entorno de ejecucion y
 	@; colocandolo en la cola de READY;
 	@;Parametros
 	@; R0: intFunc funcion
@@ -506,7 +579,7 @@ _gp_terminarProc:
 	ldr r0, =_gd_sincMain
 	ldr r2, [r0]			@; R2 = valor actual de la variable de sincronismo
 	mov r3, #1
-	mov r3, r3, lsl r1		@; R3 = m�scara con bit correspondiente al z�calo
+	mov r3, r3, lsl r1		@; R3 = mascara con bit correspondiente al zocalo
 	orr r2, r3
 	str r2, [r0]			@; actualizar variable de sincronismo
 	bl _gp_desinhibirIRQs
@@ -518,11 +591,11 @@ _gp_terminarProc:
 
 	.global _gp_matarProc
 	@; Rutina para destruir un proceso de usuario:
-	@; borra el PID del PCB del z�calo referenciado por par�metro, para indicar
-	@; que esa entrada del vector _gd_pcbs est� libre; elimina el �ndice de
-	@; z�calo de la cola de READY o de la cola de DELAY, est� donde est�;
-	@; Par�metros:
-	@;	R0:	z�calo del proceso a matar (entre 1 y 15).
+	@; borra el PID del PCB del zocalo referenciado por parametro, para indicar
+	@; que esa entrada del vector _gd_pcbs esta libre; elimina el indice de
+	@; zocalo de la cola de READY o de la cola de DELAY, este donde este;
+	@; Parametros:
+	@;	R0:	zocalo del proceso a matar (entre 1 y 15).
 _gp_matarProc:
 	push {lr}
 
@@ -531,20 +604,42 @@ _gp_matarProc:
 
 	
 	.global _gp_retardarProc
-	@; retarda la ejecuci�n de un proceso durante cierto n�mero de segundos,
-	@; coloc�ndolo en la cola de DELAY
-	@;Par�metros
+	@; retarda la ejecucion de un proceso durante cierto numero de segundos,
+	@; colocandolo en la cola de DELAY
+	@;Parametros
 	@; R0: int nsec
 _gp_retardarProc:
-	push {lr}
+	push {r1-r3, lr}
 
+	@; Calcular cuantos ticks corresponden al retardo
+	mov r1, #60				@; R1 = 60 porque el programa tendra 60 retrocesos verticales por segundo
+	mul r1, r0, r1			@; multiplicar 60*nsec para obtener ticks
 
-	pop {pc}			@; no retornar� hasta que se haya agotado el retardo
+	@; Construir word con zocalo y bits retardo y poner bit de mas peso a 1 de _gd_pidz
+	ldr r2, =_gd_pidz		@; cargar direccion de _gd_pidz
+	ldr r3, [r2]			@; obtener su valor
+	orr r3, #0x80000000		@; poner el bit de mas peso a 1
+	str r3, [r2]			@; almacenar _gd_pidz modificado
+	and r3, #0xF			@; quedarse con los 4 bits bajos (zocalo)
+	mov r3, r3, lsl #24		@; desplazar zocalo a los 8 bits altos
+	orr r1, r3				@; juntar bits de zocalo con el numero de ticks a retardar
+	
+	@; Poner el proceso actual a la cola DELAY
+	ldr r2, =_gd_nDelay		@; cargar direccion de _gd_nDelay
+	ldr r3, [r2]			@; obtener su valor
+	ldr r4, =_gd_qDelay		@; cargar la direccion de _gd_qDelay
+	str r1, [r4, r3]		@; guardar word construido en la siguiente posicion libre
+	add r3, #1				@; incrementar en 1 el numero de procesos en DELAY
+	str r3, [r2]			@; guardar el nuevo valor
+
+	bl _gp_WaitForVBlank	@; forzar un cambio de contexto
+
+	pop {r1-r3, pc}			@; no retornara hasta que se haya agotado el retardo
 
 
 	.global _gp_inihibirIRQs
 	@; pone el bit IME (Interrupt Master Enable) a 0, para inhibir todas
-	@; las IRQs y evitar as� posibles problemas debidos al cambio de contexto
+	@; las IRQs y evitar asi posibles problemas debidos al cambio de contexto
 _gp_inhibirIRQs:
 	push {lr}
 
@@ -563,11 +658,11 @@ _gp_desinhibirIRQs:
 
 
 	.global _gp_rsiTIMER0
-	@; Rutina de Servicio de Interrupci�n (RSI) para contabilizar los tics
+	@; Rutina de Servicio de Interrupcion (RSI) para contabilizar los tics
 	@; de trabajo de cada proceso: suma los tics de todos los procesos y calcula
 	@; el porcentaje de uso de la CPU, que se guarda en los 8 bits altos de la
 	@; entrada _gd_pcbs[z].workTicks de cada proceso (z) y, si el procesador
-	@; gr�fico secundario est� correctamente configurado, se imprime en la
+	@; grafico secundario esta correctamente configurado, se imprime en la
 	@; columna correspondiente de la tabla de procesos.
 _gp_rsiTIMER0:
 	push {lr}

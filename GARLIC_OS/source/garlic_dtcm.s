@@ -9,7 +9,7 @@
 
 	.align 2
 
-	.global _gd_pidz			@; Identificador de proceso + z�calo actual
+	.global _gd_pidz			@; Identificador de proceso + zocalo actual
 _gd_pidz:	.word 0
 
 	.global _gd_pidCount		@; Contador global de PIDs
@@ -21,20 +21,26 @@ _gd_tickCount:	.word 0
 	.global _gd_sincMain		@; Sincronismos con programa principal
 _gd_sincMain:	.word 0
 
-	.global _gd_seed			@; Semilla para generaci�n de n�meros aleatorios
+	.global _gd_seed			@; Semilla para generacion de numeros aleatorios
 _gd_seed:	.word 0xFFFFFFFF
 
-	.global _gd_nReady			@; N�mero de procesos en la cola de READY
+	.global _gd_nReady			@; Numero de procesos en la cola de READY
 _gd_nReady:	.word 0
 
 	.global _gd_qReady			@; Cola de READY (procesos preparados)
 _gd_qReady:	.space 16
 
-	.global _gd_nDelay			@; N�mero de procesos en la cola de DELAY
+	.global _gd_nDelay			@; Numero de procesos en la cola de DELAY
 _gd_nDelay:	.word 0
 
 	.global _gd_qDelay			@; Cola de DELAY (procesos retardados)
 _gd_qDelay:	.space 16 * 4
+
+	.global _gd_nBlock			@; Numero de procesos en la cola de BLOCK
+_gd_nBlock: .word 0
+
+	.global _gd_qBlock			@; Cola de BLOCK (procesos bloqueados)
+_gd_qBlock: .space 8
 
 	.global _gd_pcbs			@; Vector de PCBs de los procesos activos
 _gd_pcbs:	.space 16 * 6 * 4

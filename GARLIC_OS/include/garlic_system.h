@@ -54,6 +54,13 @@ extern int _gd_qDelay[16];	// Cola de DELAY (procesos retardados) : vector
 							// m�s el n�mero de tics restantes (16 bits bajos)
 							// para desbloquear el proceso
 
+extern int _gd_nBlock;		// numero de procesos en cola de BLOCK (0..15)
+
+extern char _gd_qBlock[8];	// Cola de BLOCK (procesos bloqueados) : vector
+							// con _gd_nBlock entradas, conteniendo
+							// los identificadores (0..15) de los zocalos de los
+							// procesos (max. 8 procesos)
+
 
 typedef struct				// Estructura del bloque de control de un proceso
 {							// (PCB: Process Control Block)
