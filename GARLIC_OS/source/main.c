@@ -81,9 +81,9 @@ int main(int argc, char **argv) {
 	start = _gm_cargarPrograma("HOLA");
 	if (start)
 	{	
-		_gp_crearProc(start, 1, "HOLA", 1);
-		_gp_crearProc(start, 2, "HOLA", 2);
-		_gp_crearProc(start, 3, "HOLA", 3);
+		_gp_crearProc(start, 1, "HOLA", 3);
+		_gp_crearProc(start, 2, "HOLA", 1);
+		_gp_crearProc(start, 3, "HOLA", 2);
 		
 		while (_gp_numProc() > 1)
 		{
