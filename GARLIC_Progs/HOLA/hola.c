@@ -26,10 +26,6 @@ int _start(int arg)				/* funci�n de inicio : no se usa 'main' */
 						// c�lculo aleatorio del n�mero de iteraciones 'iter'
 	GARLIC_divmod(GARLIC_random(), j, &i, &iter);
 	iter++;							// asegurar que hay al menos una iteraci�n
-	
-GARLIC_printf("Delay for arg*2 seconds!\n");
-GARLIC_delay(arg*2);
-GARLIC_clear("Delay finished! start printing...");
 
 	for (i = 0; i < iter; i++)		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);

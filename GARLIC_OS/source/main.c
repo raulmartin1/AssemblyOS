@@ -2,23 +2,23 @@
 
 	"main.c" : fase 2 / progP
 
-	Versi�n final de GARLIC 2.0
-	(multiplexaci�n, retardar procesos, matar procesos)
+	Version final de GARLIC 2.0
+	(multiplexacion, retardar procesos, matar procesos)
 
 ------------------------------------------------------------------------------*/
 #include <nds.h>
 #include <stdlib.h>
 
-#include "garlic_system.h"	// definici�n de funciones y variables de sistema
+#include "garlic_system.h"	// definicion de funciones y variables de sistema
 
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
 const short divFreq0 = -33513982/1024;		// frecuencia de TIMER0 = 1 Hz
 
 
-/* funci�n para escribir los porcentajes de uso de la CPU de los procesos de los
-		cuatro primeros z�calos, en el caso que la RSI del TIMER0 haya realizado
-		el c�lculo */
+/* funcion para escribir los porcentajes de uso de la CPU de los procesos de los
+		cuatro primeros zocalos, en el caso que la RSI del TIMER0 haya realizado
+		el calculo */
 void porcentajeUso()
 {
 	if (_gd_sincMain & 1)			// verificar sincronismo de timer0
@@ -36,11 +36,11 @@ void porcentajeUso()
 //------------------------------------------------------------------------------
 void inicializarSistema() {
 //------------------------------------------------------------------------------
-	_gg_iniGrafA();			// inicializar procesadores gr�ficos
+	_gg_iniGrafA();			// inicializar procesadores graficos
 	_gs_iniGrafB();
 	_gs_dibujarTabla();
 
-	_gd_seed = *punixTime;	// inicializar semilla para n�meros aleatorios con
+	_gd_seed = *punixTime;	// inicializar semilla para numeros aleatorios con
 	_gd_seed <<= 16;		// el valor de tiempo real UNIX, desplazado 16 bits
 	
 	_gd_pcbs[0].keyName = 0x4C524147;		// "GARL"
@@ -67,41 +67,6 @@ void inicializarSistema() {
 int main(int argc, char **argv) {
 //------------------------------------------------------------------------------
 	intFunc start;
-
-	inicializarSistema();
-	
-	_gg_escribir("********************************", 0, 0, 0);
-	_gg_escribir("*                              *", 0, 0, 0);
-	_gg_escribir("* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
-	_gg_escribir("*                              *", 0, 0, 0);
-	_gg_escribir("********************************", 0, 0, 0);
-	_gg_escribir("*** Inicio fase 2_P\n", 0, 0, 0);
-
-	_gg_escribir("*** Carga de programa HOLA.elf\n", 0, 0, 0);
-	start = _gm_cargarPrograma("HOLA");
-	if (start)
-	{	
-		_gp_crearProc(start, 1, "HOLA", 3);
-		_gp_crearProc(start, 2, "HOLA", 1);
-		_gp_crearProc(start, 3, "HOLA", 2);
-		
-		while (_gp_numProc() > 1)
-		{
-			_gp_WaitForVBlank();
-			porcentajeUso();
-		}
-	} else _gg_escribir("*** Programa NO cargado\n", 0, 0, 0);
-
-	_gg_escribir("*** Programa finalizado!\n", 0, 0, 0);
-
-	while(1){
-		_gp_WaitForVBlank();
-	}
-
-	return 0;
-}
-
-	/*intFunc start;
 	int mtics, v;
 
 	inicializarSistema();
@@ -130,7 +95,7 @@ int main(int argc, char **argv) {
 		_gg_escribir("Proceso 1 eliminado\n", 0, 0, 0);
 		_gs_dibujarTabla();
 		
-		while (_gd_tickCount < 480)			// esperar 4 segundos m�s
+		while (_gd_tickCount < 480)			// esperar 4 segundos mas
 		{
 			_gp_WaitForVBlank();
 			porcentajeUso();
@@ -161,7 +126,7 @@ int main(int argc, char **argv) {
 		_gp_crearProc(start, 3, "PONG", 3);
 		
 		mtics = _gd_tickCount + 960;
-		while (_gd_tickCount < mtics)		// esperar 16 segundos m�s
+		while (_gd_tickCount < mtics)		// esperar 16 segundos mas
 		{
 			_gp_WaitForVBlank();
 			porcentajeUso();
@@ -189,4 +154,4 @@ int main(int argc, char **argv) {
 		_gp_WaitForVBlank();
 	}							// parar el procesador en un bucle infinito
 	return 0;
-}*/
+}

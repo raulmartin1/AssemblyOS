@@ -368,57 +368,57 @@ _gp_actualizarDelay:
 	push {r0-r6, lr}
 
 	@; comprobar si hay elementos en la cola de delay
-	ldr r1, =_gd_nDelay
-	ldr r1, [r1]			@; num procs delay
-	cmp r1, #0
-	beq .LemptyDelay
+	ldr r1, =_gd_nDelay		@; cargar direccion de _gd_nDelay
+	ldr r1, [r1]			@; obtener su valor
+	cmp r1, #0				@; comprobar si hay procesos en DELAY
+	beq .LemptyDelay		@; si no los hay, no hacer nada
 
 	@; inicializar registros para recorrer la cola
-	ldr r0, =_gd_qDelay		@; direccion base de la cola
-	mov r2, #0				@; indice
+	ldr r0, =_gd_qDelay		@; cargar direccion base de la cola DELAY
+	mov r2, #0				@; inicializar indice a 0 para recorrer la cola
 
 	@; bucle para restar 1 al contador de ticks	
 .LsubTime:
 	ldr r3, [r0, r2, lsl #2]	@; obtener valor del elemento en indice R2*4 (r2, lsl #2)
-	sub r3, #1				
-	str r3, [r0, r2, lsl #2]	@; guardar el valor despues de restarle 1
-	add r2, #1		
-	cmp r2, r1				
-	blo .LsubTime	
+	sub r3, #1				@; restarle 1
+	str r3, [r0, r2, lsl #2]	@; guardar el nuevo valor
+	add r2, #1				@; indice +1
+	cmp r2, r1				@; comprobar si se han actualizado todos los contadores
+	blo .LsubTime			@; si aun faltan, iterar de nuevo el bucle
 
 	@; bucle para comprobar si hay algun contador a 0
-	mov r2, #0
+	mov r2, #0				@; restauramos el indice a 0
 .LcheckZero:
 	cmp r2, r1				@; comprobar si se ha llegado al final
-	beq .LemptyDelay		@; si se ha recorrido todo, salir de la funcion
-	ldr r3, [r0, r2, lsl #2]
+	beq .LemptyDelay		@; si se ha recorrido todo, salir del bucle
+	ldr r3, [r0, r2, lsl #2]	@; obtener el valor del elemento de la cola
 	mov r3, r3, lsl #16		@; quitar bits de zocalo
 	cmp r3, #0				@; a pesar de estar en los bits altos, si el contador es >0 el salto se tomara igualmente
-	addhi r2, #1
-	bhi .LcheckZero
+	addhi r2, #1			@; si contador >0, ir al siguiente elemento
+	bhi .LcheckZero			@; e iterar de nuevo
 
 	@; mover el proceso con contador a 0 a la cola READY
-	ldr r3, [r0, r2, lsl #2]		@; si no, cargar de nuevo el elemento pero el valor entero
+	ldr r3, [r0, r2, lsl #2]	@; si no, cargar de nuevo el elemento pero el valor entero
 	mov r3, r3, lsr #24		@; quedarse con los 8 bits altos (zocalo)
-	ldr r4, =_gd_nReady
-	ldr r5, =_gd_qReady
-	ldr r6, [r4]
-	strb r3, [r5, r6]
-	add r6, #1
-	str r6, [r4]
+	ldr r4, =_gd_nReady		@; cargar direccion del numero de procesos en READY
+	ldr r5, =_gd_qReady		@; cargar direccion de la cola de READY
+	ldr r6, [r4]			@; obtener el valor del numero de procesos en READY
+	strb r3, [r5, r6]		@; guardar el zocalo del proceso en DELAY a la cola de READY
+	add r6, #1				@; incrementar numero de procesos en READY
+	str r6, [r4]			@; guardarlo en memoria
 	mov r3, r2				@; hacer una copia del indice actual
 
 	@; desplazar los procesos restantes una posicion hacia adelante
 .Lshift_delay:
 	add r2, #1				@; sumar 1 al indice para ver si hay mas elementos
-	cmp r2, r1				@; comparar r3 con el numero de elementos que habia originalmente (R1)
+	cmp r2, r1				@; comparar indice con el numero de elementos que habia originalmente (R1)
 	beq .Lcontinue			@; si no hay mas elementos, salir del bucle
 
-	ldr r4, [r0, r2, lsl #2]		@; si los hay, cargar el valor del siguiente
-	sub r2, #1
-	str r4, [r0, r2, lsl #2]
-	add r2, #1
-	b .Lshift_delay
+	ldr r4, [r0, r2, lsl #2]	@; si los hay, cargar el valor del siguiente
+	sub r2, #1				@; ir a la posicion anterior
+	str r4, [r0, r2, lsl #2]	@; guardar la informacion en la nueva posicion
+	add r2, #1				@; volver a la posicion actual
+	b .Lshift_delay			@; volver a iterar el bucle
 
 	@; continuar comprobando contador de los elementos
 .Lcontinue:
@@ -428,6 +428,7 @@ _gp_actualizarDelay:
 	mov r2, r3				@; restablecer indice a su valor original (tras mover los elementos, ahora corresponde al siguiente elemento)
 	b .LcheckZero			@; y saltar de nuevo a comprobar si hay mas procesos que han llegado a 0
 
+	@; final de la rutina _gp_actualizarDelay
 .LemptyDelay:
 
 	pop {r0-r6, pc}
@@ -591,10 +592,83 @@ _gp_terminarProc:
 	@; Parametros:
 	@;	R0:	zocalo del proceso a matar (entre 1 y 15).
 _gp_matarProc:
-	push {lr}
+	push {r1-r5, lr}
 
+	@; comprobar zocalo del proceso a matar
+	cmp r0, #0				@; comprobar que no se quiere matar el SO
+	beq .LfinMatar			@; acabar sin hacer nada si es el SO
+	cmp r0, #15				@; comprobar que el zocalo no se pasa del maximo
+	bhi .LfinMatar			@; acabar sin hacer nada en caso de que se pase
 
-	pop {pc}
+	@; poner campo PID a 0 de _gd_pcbs del zocalo indicado
+	ldr r1, =_gd_pcbs		@; obtener direccion base de las PCBs
+	mov r2, #24				@; tamaño de una PCB
+	mla r1, r0, r2, r1		@; multiplicar el tamaño de una PCB por el zocalo (indice)
+	mov r2, #0				@; inicializar un 0 en R3
+	str r2, [r1]			@; y guardar el 0 en el campo PID (primer campo)
+
+	@; inicializar variables para buscar en la cola RDY
+	ldr r1, =_gd_qReady
+	ldr r2, =_gd_nReady
+	ldr r3, [r2]
+	mov r4, #0
+
+	@; buscar zocalo en la cola RDY
+.LfindProcRDY:
+	cmp r4, r3
+	beq .LdelaySetup
+	ldrb r5, [r1, r4]
+	cmp r5, r0
+	addne r4, #1
+	bne .LfindProcRDY
+
+	@; desplazar procesos hacia adelante de la cola RDY
+.LshiftQueueRDY:
+	add r4, #1				@; sumar 1 al indice para ver si hay mas elementos
+	cmp r4, r3				@; comparar indice con el numero de elementos que habia originalmente (R3)
+	beq .Lcleanup			@; y salir de la funcion si no hay mas
+	ldrb r5, [r1, r4]		@; si los hay, cargar el valor del siguiente
+	sub r4, #1				@; restar 1 al indice
+	strb r5, [r1, r4]		@; y guardarlo en el sitio del que se ha sacado de la cola
+	add r4, #1				@; incrementar indice en 1
+	b .LshiftQueueRDY		@; y seguir iterando
+
+	@; inicializar variables para buscar en la cola DLY
+.LdelaySetup:
+	ldr r1, =_gd_qDelay
+	ldr r2, =_gd_nDelay
+	ldr r3, [r2]
+	mov r4, #0
+
+	@; buscar zocalo en la cola DLY
+.LfindProcDLY:
+	cmp r4, r3				@; comprobar si se ha llegado al final
+	beq .Lcleanup			@; si se ha recorrido todo, salir de la funcion
+	ldr r5, [r1, r4, lsl #2]		@; si no, cargar el zocalo correspondiente de la cola
+	mov r5, r5, lsr #24		@; quedarse con los 8 bits altos (zocalo)
+	cmp r5, r0				@; comprobar si es igual al indicado
+	addne r4, #1			@; en caso que no, sumar 1 al indice
+	bne .LfindProcDLY		@; e iterar de nuevo
+
+	@; desplazar procesos hacia adelante de la cola RDY
+.LshiftQueueDLY:
+	add r4, #1				@; sumar 1 al indice para ver si hay mas elementos
+	cmp r4, r3				@; comparar indice con el numero de elementos que habia originalmente (R3)
+	beq .Lcleanup			@; y salir de la funcion si no hay mas
+	ldr r5, [r1, r4, lsl #2]		@; si los hay, cargar el valor del siguiente
+	sub r4, #1				@; restar 1 al indice
+	str r5, [r1, r4, lsl #2]		@; y guardarlo en el sitio del que se ha sacado de la cola
+	add r4, #1				@; incrementar indice en 1
+	b .LshiftQueueRDY		@; y seguir iterando
+
+	@; cambios finales de matar el proceso
+.Lcleanup:
+	sub r3, #1				@; restar 1 al numero de elementos en la cola en la que se estaba iterando
+	str r3, [r2]			@; y actualizar su valor
+
+.LfinMatar:
+
+	pop {r1-r5, pc}
 
 	
 	.global _gp_retardarProc
@@ -603,11 +677,11 @@ _gp_matarProc:
 	@;Parametros
 	@; R0: int nsec
 _gp_retardarProc:
-	push {r1-r5, lr}
+	push {r1-r4, lr}
 
 	@; Calcular cuantos ticks corresponden al retardo
 	mov r1, #60				@; R1 = 60 porque el programa tendra 60 retrocesos verticales por segundo
-	mul r1, r0, r1			@; multiplicar 60*nsec para obtener ticks
+	mul r1, r0				@; multiplicar 60*nsec para obtener ticks
 
 	@; Construir word con zocalo y bits retardo y poner bit de mas peso a 1 de _gd_pidz
 	ldr r2, =_gd_pidz		@; cargar direccion de _gd_pidz
@@ -628,27 +702,35 @@ _gp_retardarProc:
 
 	bl _gp_WaitForVBlank	@; forzar un cambio de contexto
 
-	pop {r1-r5, pc}			@; no retornara hasta que se haya agotado el retardo
+	pop {r1-r4, pc}			@; no retornara hasta que se haya agotado el retardo
 
 
 	.global _gp_inihibirIRQs
 	@; pone el bit IME (Interrupt Master Enable) a 0, para inhibir todas
 	@; las IRQs y evitar asi posibles problemas debidos al cambio de contexto
 _gp_inhibirIRQs:
-	push {lr}
+	push {r0-r1, lr}
 
+	ldr r0, =0x04000208		@; cargar registro con la direccion de REG_IME
+	ldrh r1, [r0]			@; cargar su contenido (halfword)
+	bic r1, #0x01			@; poner bit 0 a 0
+	strh r1, [r0]			@; y guardar el nuevo valor
 
-	pop {pc}
+	pop {r0-r1, pc}
 
 
 	.global _gp_desinihibirIRQs
 	@; pone el bit IME (Interrupt Master Enable) a 1, para desinhibir todas
 	@; las IRQs
 _gp_desinhibirIRQs:
-	push {lr}
+	push {r0-r1, lr}
 
+	ldr r0, =0x04000208		@; cargar registro con la direccion de REG_IME
+	ldrh r1, [r0]			@; cargar su contenido (halfword)
+	orr r1, #0x01			@; poner el bit 0 a 1
+	strh r1, [r0]			@; y guardar el nuevo valor
 
-	pop {pc}
+	pop {r0-r1, pc}
 
 
 	.global _gp_rsiTIMER0
