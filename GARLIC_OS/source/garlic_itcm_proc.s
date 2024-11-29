@@ -70,41 +70,52 @@ _gp_IntrMain:
 _gp_rsiVBL:
 	push {r4-r7, lr}
 
-	@; Incrementar contador de tics general y actualizar contadores DELAY
-	ldr r4, =_gd_tickCount		@; cargar direccion mem contador tics
-	ldr r5, [r4]				@; obtener su valor
-	add r5, #1					@; incrementar en 1
-	str r5, [r4]				@; guardar nuevo valor
-	bl _gp_actualizarDelay		@; actualizar contadores de DELAY
+	@; Incrementar contador de tics general y especifico y actualizar contadores DELAY
+	ldr r4, =_gd_tickCount	@; cargar direccion del contador tics general
+	ldr r5, [r4]			@; obtener su valor
+	add r5, #1				@; incrementar en 1
+	str r5, [r4]			@; guardar nuevo valor
+
+	bl _gp_actualizarDelay	@; actualizar contadores de DELAY
+
+	ldr r4, =_gd_pcbs		@; cargar direccion de _gd_pcbs
+	ldr r5, =_gd_pidz		@; cargar direccion de _gd_pidz
+	ldr r5, [r5]			@; obtener su valor
+	and r5, #0xF			@; mantener bits de zocalo
+	mov r6, #24				@; inicializar tamaño de cada entrada del vector
+	mla r4, r5, r6, r4		@; calcular direccion base de la entrada correspondiente al zocalo
+	ldr r5, [r4, #20]		@; obtener valor de workTicks
+	add r5, #1				@; sumarle 1
+	str r5, [r4, #20]		@; y volver a guardarlo
 	@; Fin incrementar tics y actualizar DELAY
 
 	@; Detectar si quedan procesos en la cola RDY
-	ldr r4, =_gd_nReady			@; cargar direccion _gd_nReady
-	ldr r5, [r4]				@; obtener su valor
-	cmp r5, #0					@; comprobar si es 0
-	beq .LendVBL				@; si lo es, acabar multiplexacion
-								@; si no, continuar la multiplexacion
+	ldr r4, =_gd_nReady		@; cargar direccion _gd_nReady
+	ldr r5, [r4]			@; obtener su valor
+	cmp r5, #0				@; comprobar si es 0
+	beq .LendVBL			@; si lo es, acabar multiplexacion
+							@; si no, continuar la multiplexacion
 	@; Fin detectar si quedan procesos en la cola RDY
 
 	@; Comprobar proceso actual para salvar y/o restaurar contextos
-	ldr r4, =_gd_pidz			@; cargar direccion del proceso actual
-	ldr r5, [r4]				@; obtener su valor
-	bic r5, #0x80000000			@; poner a 0 el bit de mas peso para no interferir
-	cmp r5, #0					@; comprobar si es el SO
-	moveq r7, #1				@; si lo es, guardar un 1 en R7 para indicar que hay que guardar el contexto
-	beq .LcontextChange			@; y saltar a cambio de contexto
-								@; si no, comprobar si ha acabado
-	mov r5, r5, lsr #4			@; desplazar _gd_pidz 4 bits a la derecha para eliminar bits de zocalo
-	cmp r5, #0					@; comprobar si PID = 0
-	moveq r7, #0				@; si lo es, guardar numero != 1 para indicar que no hace falta guardar contexto
-	beq .LcontextChange			@; y saltar a cambio de contexto
-	mov r7, #1					@; si no lo es, guardar contexto primero (R7 = 1)
+	ldr r4, =_gd_pidz		@; cargar direccion del proceso actual
+	ldr r5, [r4]			@; obtener su valor
+	bic r5, #0x80000000		@; poner a 0 el bit de mas peso para no interferir
+	cmp r5, #0				@; comprobar si es el SO
+	moveq r7, #1			@; si lo es, guardar un 1 en R7 para indicar que hay que guardar el contexto
+	beq .LcontextChange		@; y saltar a cambio de contexto
+							@; si no, comprobar si ha acabado
+	mov r5, r5, lsr #4		@; desplazar _gd_pidz 4 bits a la derecha para eliminar bits de zocalo
+	cmp r5, #0				@; comprobar si PID = 0
+	moveq r7, #0			@; si lo es, guardar numero != 1 para indicar que no hace falta guardar contexto
+	beq .LcontextChange		@; y saltar a cambio de contexto
+	mov r7, #1				@; si no lo es, guardar contexto primero (R7 = 1)
 
 .LcontextChange:
 
 	ldr r4, =_gd_nReady		@; guardar valores necesarios en los registros
 	ldr r5, [r4]			@; antes de saltar al cambio de contexto
-	ldr r6, =_gd_pidz
+	ldr r6, =_gd_pidz		@; para que las subrutinas los usen
 	cmp r7, #1				@; comprobar si hay que guardar el contexto o no
 	bleq _gp_salvarProc		@; si R7=1, saltar a salvar el contexto
 	bl _gp_restaurarProc	@; si no, directamente restaurar el siguiente
@@ -476,6 +487,7 @@ _gp_crearProc:
 	ldr r4, =_gd_pcbs		@; si no, cargar dir. base de los PCBs
 	mov r5, #24				@; tamaño de un PCB
 	mla r4, r5, r1, r4		@; obtener direccion del PCB del zocalo indicado (dir. base + tamaño PCB * zocalo)
+	bl _gp_inhibirIRQs
 	ldr r5, [r4]			@; cargar PID del PCB obtenido
 	cmp r5, #0				@; comprobar si esta libre (PID = 0)
 	movne r7, #1			@; si no lo esta, devolver R0 > 0 (comprobando R7 al final)
@@ -545,7 +557,7 @@ _gp_crearProc:
 	@; Fin añadir nuevo proceso a la cola RDY
 
 .LbadProcess:
-
+	bl _gp_desinhibirIRQs
 	cmp r7, #1				@; comprobamos si R7 = 1, lo que significa que no se ha podido crear el proceso
 	movne r0, #0			@; si no lo es, guardamos un 0 en R0 para indicar que el proceso se ha creado correctamente
 	moveq r0, #1			@; si lo es, entonces guardar un 1
@@ -601,11 +613,13 @@ _gp_matarProc:
 	bhi .LfinMatar			@; acabar sin hacer nada en caso de que se pase
 
 	@; poner campo PID a 0 de _gd_pcbs del zocalo indicado
+	bl _gp_inhibirIRQs
 	ldr r1, =_gd_pcbs		@; obtener direccion base de las PCBs
 	mov r2, #24				@; tamaño de una PCB
 	mla r1, r0, r2, r1		@; multiplicar el tamaño de una PCB por el zocalo (indice)
 	mov r2, #0				@; inicializar un 0 en R3
 	str r2, [r1]			@; y guardar el 0 en el campo PID (primer campo)
+	bl _gp_desinhibirIRQs
 
 	@; inicializar variables para buscar en la cola RDY
 	ldr r1, =_gd_qReady
@@ -623,6 +637,7 @@ _gp_matarProc:
 	bne .LfindProcRDY
 
 	@; desplazar procesos hacia adelante de la cola RDY
+	bl _gp_inhibirIRQs
 .LshiftQueueRDY:
 	add r4, #1				@; sumar 1 al indice para ver si hay mas elementos
 	cmp r4, r3				@; comparar indice con el numero de elementos que habia originalmente (R3)
@@ -651,6 +666,7 @@ _gp_matarProc:
 	bne .LfindProcDLY		@; e iterar de nuevo
 
 	@; desplazar procesos hacia adelante de la cola RDY
+	bl _gp_inhibirIRQs
 .LshiftQueueDLY:
 	add r4, #1				@; sumar 1 al indice para ver si hay mas elementos
 	cmp r4, r3				@; comparar indice con el numero de elementos que habia originalmente (R3)
@@ -665,6 +681,7 @@ _gp_matarProc:
 .Lcleanup:
 	sub r3, #1				@; restar 1 al numero de elementos en la cola en la que se estaba iterando
 	str r3, [r2]			@; y actualizar su valor
+	bl _gp_desinhibirIRQs
 
 .LfinMatar:
 
