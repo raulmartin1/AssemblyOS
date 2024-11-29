@@ -365,80 +365,67 @@ _gp_signalS:
 	@; Rutina para actualizar la cola de procesos retardados, poniendo en
 	@; cola de READY aquellos cuyo numero de tics de retardo sea 0
 _gp_actualizarDelay:
-	push {r0-r9, lr}
+	push {r0-r8, lr}
 
-	@; Obtener direcciones y valores necesarios
-	ldr r0, =_gd_qDelay		@; cargar direccion de _gd_qDelay
-	ldr r1, =_gd_nDelay		@; cargar direccion de _gd_nDelay
-	ldr r2, [r1]			@; obtener valor de _gd_nDelay
-	cmp r2, #0				@; comprobar si hay algun proceso en DELAY
-	beq .LendCheck			@; si no los hay, no hacer nada
-	mov r9, r2				@; guardar una copia de R2 en R9 para mas adelante
-	mov r3, #0				@; inicializar contador R3 a 0
+	ldr r0, =_gd_nDelay		@; obtener direccion del numero de procesos en Delay
+	ldr r2, [r0]			@; cargar su valor
+	cmp r2, #0				@; comprobar si es 0
+	beq .LemptyDelay		@; si lo es, no hacer nada y salir
+	ldr r1, =_gd_qDelay		@; si no, cargar direccion de la cola Delay
+	mov r3, #0				@; inicializar r3 con un 0
+	mov r5, #4				@; mover un 4 en R5 para usarlo para acceder al elemento correcto
+.LsubTime:
+	cmp r3, r2				@; comprobar si el indice ha llegado al final
+	moveq r3, #0			@; si ha llegado al final, resetear indice a 0
+	moveq r8, r5			@; trasladar el 4 a R8
+	ldreq r5, =_gd_nReady	@; cargar direccion del numero de elementos en la cola READY
+	ldreq r6, =_gd_qReady	@; cargar direccion de la cola de READY
+	beq .LcheckZero			@; y saltar a comprobar si hay procesos que su contador ha llegado a 0
 
-	@; Decrementar todos los contadores 1 tick
-.LcheckTicks:
-	ldr r4, [r0, r3]		@; obtener elemento con indice R3 de la cola DELAY
-	ldr r8, =#0xFFFF		@; mascara para los 16 bits bajos
-	and r5, r4, r8			@; quedarse con los 16 bits bajos
-	cmp r5, #0				@; comprobar si los ticks son 0
-	beq .LdelayToReady		@; en caso de ser 0, mover proceso a cola READY
-	subhi r4, #1			@; en caso de que no, restarle 1
-	strhi r4, [r0, r3]		@; y guardar el nuevo valor
+	mul r6, r3, r5			@; calcular offset para el elemento correspondiente
+	ldrh r4, [r1, r6]		@; si no, cargar un halfword (16 bits bajos, que en este caso corresponden al contador de tics)
+	sub r4, #1				@; restarle 1
+	strh r4, [r1, r6]		@; y guardarlo de nuevo
+	add r3, #1				@; incrementar indice en 1
+	b .LsubTime				@; y pasar al siguiente elemento
+.LcheckZero:
+	cmp r3, r2				@; comprobar si se ha llegado al final
+	beq .LemptyDelay		@; si se ha recorrido todo, salir de la funcion
+	mul r7, r3, r8			@; calcular offset para el elemento correspondiente
+	ldrh r4, [r1, r7]		@; si no, cargar los 16 bits bajos con el contador de tics
+	cmp r4, #0				@; comprobar si ha llegado a 0
+	addhi r3, #1			@; en caso que no, sumar 1 al indice
+	bhi .LcheckZero			@; e iterar de nuevo
+
+	ldr r4, [r1, r7]		@; si no, cargar de nuevo el elemento pero el valor entero
+	mov r4, r4, lsr #24		@; quedarse con los 8 bits altos (zocalo)
+	ldr r7, [r5]			@; cargar el numero de procesos en ready
+	strb r4, [r6, r7]		@; guardar el zocalo en la cola de ready
+	add r7, #1				@; incrementar en 1 el numero de procesos en ready
+	str r7, [r5]			@; actualizar su valor
+	mov r4, r3
+
+.Lshift_delay:
+	add r3, #1				@; sumar 1 a r3 para ver si hay mas elementos
+	cmp r3, r2				@; comparar r3 con el numero de elementos que habia originalmente (r2)
+	beq .Lcontinue			@; si no hay mas elementos, salir del bucle
+	mul r7, r3, r8
+	ldr r0, [r1, r7]		@; si los hay, cargar el valor del siguiente
+	sub r7, r8				@; restar 4 bytes al offset
+	str r0, [r1, r7]		@; y guardarlo en el sitio del que se ha sacado de la cola
+	@;add r3, #1				@; incrementar indice en 1
+	b .Lshift_delay			@; y seguir iterando
+
 .Lcontinue:
-	add r3, #1				@; sumar 1 al indice
-	cmp r3, r2				@; comprobar si aun quedan procesos en la cola DELAY
-	blo .LcheckTicks		@; y repetir bucle
-	b .LshiftProcs			@; finalmente, saltar a desplazar los procesos restantes al principio de la cola
+	sub r2, #1				@; restar 1 al numero de elementos en la cola
+	ldr r0, =_gd_nDelay		@; obtener direccion del contador de procesos en Delay (y asi restaurar r0 a su valor original)
+	str r2, [r0]			@; actualizar su valor
+	mov r3, r4				@; restablecer r3 a su valor original (tras mover los elementos, ahora corresponde al siguiente elemento)
+	b .LcheckZero			@; y saltar de nuevo a comprobar si hay mas procesos que han llegado a 0
 
-	@; Mover proceso a cola READY
-.LdelayToReady:
-	ldr r6, =_gd_qReady		@; cargar direccion de _gd_qReady
-	ldr r7, =_gd_nReady		@; cargar direccion de _gd_nReady
-	ldr r8, [r7]			@; obtener valor de _gd_nReady
-	and r5, r4, #0xFF000000	@; quedarse con los 8 bits altos
-	mov r5, r5, lsr #24		@; desplazar los 8 bits altos a los 8 bits bajos
-	strb r5, [r6, r8]		@; guardar zocalo (R5) en la cola READY (R6) en el indice correspondiente (R8)
-	add r8, #1				@; incrementar numero de procesos en la cola READY
-	str r8, [r7]			@; guardar nuevo numero de procesos READY
-	mov r6, #0				@; guardar un 0 en R6
-	str r6, [r0, r3]		@; y borrar el proceso de la cola de DELAY
-	sub r9, #1				@; restar 1 al numero de procesos en la cola DELAY (en la copia que esta en R9)
-	b .Lcontinue			@; y seguir con los demas procesos
+.LemptyDelay:
 
-	@; desplazar procesos restantes hacia delante una posicion
-.LshiftProcs:
-	str r9, [r1]			@; primero actualizar el numero de procesos restantes a la cola DELAY
-	mov r8, #0				@; inicializar un contador para reducir iteraciones
-	mov r2, #0				@; inicializar R2 a 0 (primer elemento)
-
-.LforLoop:
-	cmp r8, r9
-	beq .LendCheck
-	cmp r2, #15				@; comprobamos si ya hemos visitado todas las posiciones
-	beq .LendCheck
-	ldr r4, [r0, r2]		@; obtener el valor del elemento actual
-	cmp r4, #0
-	addne r2, #1
-	addne r8, #1
-	bne .LforLoop
-
-	add r3, r2, #1
-.LforLoop2:
-	cmp r3, #15
-	bhi .LendCheck
-	ldr r5, [r0, r3]		@; obtener valor del siguiente elemento
-	cmp r5, #0
-	addeq r3, #1
-	beq .LforLoop2
-	str r5, [r0, r2]
-	add r2, #1
-	add r8, #1
-	b .LforLoop
-	
-.LendCheck:
-
-	pop {r0-r9, pc}
+	pop {r0-r8, pc}
 
 
 	.global _gp_numProc
@@ -609,7 +596,7 @@ _gp_matarProc:
 	@;Parametros
 	@; R0: int nsec
 _gp_retardarProc:
-	push {r1-r3, lr}
+	push {r1-r5, lr}
 
 	@; Calcular cuantos ticks corresponden al retardo
 	mov r1, #60				@; R1 = 60 porque el programa tendra 60 retrocesos verticales por segundo
@@ -628,13 +615,15 @@ _gp_retardarProc:
 	ldr r2, =_gd_nDelay		@; cargar direccion de _gd_nDelay
 	ldr r3, [r2]			@; obtener su valor
 	ldr r4, =_gd_qDelay		@; cargar la direccion de _gd_qDelay
-	str r1, [r4, r3]		@; guardar word construido en la siguiente posicion libre
+	mov r5, #4
+	mul r5, r3, r5
+	str r1, [r4, r5]		@; guardar word construido en la siguiente posicion libre
 	add r3, #1				@; incrementar en 1 el numero de procesos en DELAY
 	str r3, [r2]			@; guardar el nuevo valor
 
 	bl _gp_WaitForVBlank	@; forzar un cambio de contexto
 
-	pop {r1-r3, pc}			@; no retornara hasta que se haya agotado el retardo
+	pop {r1-r5, pc}			@; no retornara hasta que se haya agotado el retardo
 
 
 	.global _gp_inihibirIRQs

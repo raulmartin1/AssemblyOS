@@ -46,7 +46,7 @@ void inicializarSistema() {
 	_gd_pcbs[0].keyName = 0x4C524147;		// "GARL"
 	
 	if (!_gm_initFS()) {
-		_gg_escribir("ERROR: �no se puede inicializar el sistema de ficheros!", 0, 0, 0);
+		_gg_escribir("ERROR: no se puede inicializar el sistema de ficheros!", 0, 0, 0);
 		exit(0);
 	}
 
@@ -81,8 +81,8 @@ int main(int argc, char **argv) {
 	start = _gm_cargarPrograma("HOLA");
 	if (start)
 	{	
-		_gp_crearProc(start, 1, "HOLA", 3);
-		_gp_crearProc(start, 2, "HOLA", 3);
+		_gp_crearProc(start, 1, "HOLA", 1);
+		_gp_crearProc(start, 2, "HOLA", 2);
 		_gp_crearProc(start, 3, "HOLA", 3);
 		
 		while (_gp_numProc() > 1)
