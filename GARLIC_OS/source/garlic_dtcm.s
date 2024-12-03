@@ -40,7 +40,8 @@ _gd_qDelay:	.space 16 * 4
 _gd_nBlock: .word 0
 
 	.global _gd_qBlock			@; Cola de BLOCK (procesos bloqueados)
-_gd_qBlock: .space 8
+_gd_qBlock: .word 0
+			.word 0
 
 	.global _gd_pcbs			@; Vector de PCBs de los procesos activos
 _gd_pcbs:	.space 16 * 6 * 4

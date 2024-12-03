@@ -70,13 +70,13 @@ _gp_IntrMain:
 _gp_rsiVBL:
 	push {r4-r7, lr}
 
-	@; Incrementar contador de tics general y especifico y actualizar contadores DELAY
+	@; Incrementar contador de tics general y especifico y actualizar contadores DLY
 	ldr r4, =_gd_tickCount	@; cargar direccion del contador tics general
 	ldr r5, [r4]			@; obtener su valor
 	add r5, #1				@; incrementar en 1
 	str r5, [r4]			@; guardar nuevo valor
 
-	bl _gp_actualizarDelay	@; actualizar contadores de DELAY
+	bl _gp_actualizarDelay	@; actualizar contadores de DLY
 
 	ldr r4, =_gd_pcbs		@; cargar direccion de _gd_pcbs
 	ldr r5, =_gd_pidz		@; cargar direccion de _gd_pidz
@@ -87,7 +87,7 @@ _gp_rsiVBL:
 	ldr r5, [r4, #20]		@; obtener valor de workTicks
 	add r5, #1				@; sumarle 1
 	str r5, [r4, #20]		@; y volver a guardarlo
-	@; Fin incrementar tics y actualizar DELAY
+	@; Fin incrementar tics y actualizar DLY
 
 	@; Detectar si quedan procesos en la cola RDY
 	ldr r4, =_gd_nReady		@; cargar direccion _gd_nReady
@@ -130,18 +130,19 @@ _gp_rsiVBL:
 	@; correspondiente del vector _gd_pcbs[];
 	@;Parametros
 	@; R4: direccion _gd_nReady
-	@; R5: numero de procesos en READY
+	@; R5: numero de procesos en RDY
 	@; R6: direccion _gd_pidz
 	@;Resultado
-	@; R5: nuevo numero de procesos en READY (+1)
+	@; R5: nuevo numero de procesos en RDY (+1)
 _gp_salvarProc:
 	push {r8-r11, lr}
 
 	@; Guardar zocalo del proceso a la cola de RDY
 	ldr r8, [r6]			@; obtener valor de _gd_pidz
 	tst r8, #0x80000000		@; ver si el bit de mas peso esta activo
+	and r8, #0xF			@; quedarse con los 4 bits bajos (zocalo) para calcular direcciones de memoria
 	bne .LskipRDY			@; si el bit esta activo (flag Z = 0) no guardar proceso a la cola RDY
-	and r8, #0xF			@; quedarse con los 4 bits bajos (zocalo)
+	
 	ldr r9, =_gd_qReady		@; cargar direccion de la cola de RDY
 	strb r8, [r9, r5]		@; guardar zocalo en la cola RDY
 	@; Fin guardar zocalo en la cola RDY
@@ -217,10 +218,10 @@ _gp_salvarProc:
 	pop {r8-r11, pc}
 
 
-	@; Rutina para restaurar el estado del siguiente proceso en la cola de READY;
+	@; Rutina para restaurar el estado del siguiente proceso en la cola de RDY;
 	@;Parametros
 	@; R4: direccion _gd_nReady
-	@; R5: numero de procesos en READY
+	@; R5: numero de procesos en RDY
 	@; R6: direccion _gd_pidz
 _gp_restaurarProc:
 	push {r8-r11, lr}
@@ -374,18 +375,18 @@ _gp_signalS:
 
 
 	@; Rutina para actualizar la cola de procesos retardados, poniendo en
-	@; cola de READY aquellos cuyo numero de tics de retardo sea 0
+	@; cola de RDY aquellos cuyo numero de tics de retardo sea 0
 _gp_actualizarDelay:
 	push {r0-r6, lr}
 
 	@; comprobar si hay elementos en la cola de delay
 	ldr r1, =_gd_nDelay		@; cargar direccion de _gd_nDelay
 	ldr r1, [r1]			@; obtener su valor
-	cmp r1, #0				@; comprobar si hay procesos en DELAY
+	cmp r1, #0				@; comprobar si hay procesos en DLY
 	beq .LemptyDelay		@; si no los hay, no hacer nada
 
 	@; inicializar registros para recorrer la cola
-	ldr r0, =_gd_qDelay		@; cargar direccion base de la cola DELAY
+	ldr r0, =_gd_qDelay		@; cargar direccion base de la cola DLY
 	mov r2, #0				@; inicializar indice a 0 para recorrer la cola
 
 	@; bucle para restar 1 al contador de ticks	
@@ -408,14 +409,14 @@ _gp_actualizarDelay:
 	addhi r2, #1			@; si contador >0, ir al siguiente elemento
 	bhi .LcheckZero			@; e iterar de nuevo
 
-	@; mover el proceso con contador a 0 a la cola READY
+	@; mover el proceso con contador a 0 a la cola RDY
 	ldr r3, [r0, r2, lsl #2]	@; si no, cargar de nuevo el elemento pero el valor entero
 	mov r3, r3, lsr #24		@; quedarse con los 8 bits altos (zocalo)
-	ldr r4, =_gd_nReady		@; cargar direccion del numero de procesos en READY
-	ldr r5, =_gd_qReady		@; cargar direccion de la cola de READY
-	ldr r6, [r4]			@; obtener el valor del numero de procesos en READY
-	strb r3, [r5, r6]		@; guardar el zocalo del proceso en DELAY a la cola de READY
-	add r6, #1				@; incrementar numero de procesos en READY
+	ldr r4, =_gd_nReady		@; cargar direccion del numero de procesos en RDY
+	ldr r5, =_gd_qReady		@; cargar direccion de la cola de RDY
+	ldr r6, [r4]			@; obtener el valor del numero de procesos en RDY
+	strb r3, [r5, r6]		@; guardar el zocalo del proceso en DLY a la cola de RDY
+	add r6, #1				@; incrementar numero de procesos en RDY
 	str r6, [r4]			@; guardarlo en memoria
 	mov r3, r2				@; hacer una copia del indice actual
 
@@ -433,7 +434,7 @@ _gp_actualizarDelay:
 
 	@; continuar comprobando contador de los elementos
 .Lcontinue:
-	sub r1, #1				@; restar 1 al numero de elementos en la cola DELAY
+	sub r1, #1				@; restar 1 al numero de elementos en la cola DLY
 	ldr r4, =_gd_nDelay		@; obtener direccion del contador de procesos en Delay
 	str r1, [r4]			@; actualizar su valor
 	mov r2, r3				@; restablecer indice a su valor original (tras mover los elementos, ahora corresponde al siguiente elemento)
@@ -455,10 +456,10 @@ _gp_numProc:
 
 	mov r0, #1				@; contar siempre 1 proceso en RUN
 	ldr r1, =_gd_nReady
-	ldr r2, [r1]			@; R2 = numero de procesos en cola de READY
-	add r0, r2				@; anadir procesos en READY
+	ldr r2, [r1]			@; R2 = numero de procesos en cola de RDY
+	add r0, r2				@; anadir procesos en RDY
 	ldr r1, =_gd_nDelay
-	ldr r2, [r1]			@; R2 = numero de procesos en cola de DELAY
+	ldr r2, [r1]			@; R2 = numero de procesos en cola de DLY
 	add r0, r2				@; anadir procesos retardados
 
 	pop {r1-r2, pc}
@@ -466,7 +467,7 @@ _gp_numProc:
 
 	.global _gp_crearProc
 	@; prepara un proceso para ser ejecutado, creando su entorno de ejecucion y
-	@; colocandolo en la cola de READY;
+	@; colocandolo en la cola de RDY;
 	@;Parametros
 	@; R0: intFunc funcion
 	@; R1: int zocalo
@@ -600,41 +601,35 @@ _gp_terminarProc:
 	@; Rutina para destruir un proceso de usuario:
 	@; borra el PID del PCB del zocalo referenciado por parametro, para indicar
 	@; que esa entrada del vector _gd_pcbs esta libre; elimina el indice de
-	@; zocalo de la cola de READY o de la cola de DELAY, este donde este;
+	@; zocalo de la cola de RDY o de la cola de DLY, este donde este;
 	@; Parametros:
 	@;	R0:	zocalo del proceso a matar (entre 1 y 15).
 _gp_matarProc:
 	push {r1-r5, lr}
-
-	@; comprobar zocalo del proceso a matar
-	cmp r0, #0				@; comprobar que no se quiere matar el SO
-	beq .LfinMatar			@; acabar sin hacer nada si es el SO
-	cmp r0, #15				@; comprobar que el zocalo no se pasa del maximo
-	bhi .LfinMatar			@; acabar sin hacer nada en caso de que se pase
 
 	@; poner campo PID a 0 de _gd_pcbs del zocalo indicado
 	bl _gp_inhibirIRQs
 	ldr r1, =_gd_pcbs		@; obtener direccion base de las PCBs
 	mov r2, #24				@; tamaño de una PCB
 	mla r1, r0, r2, r1		@; multiplicar el tamaño de una PCB por el zocalo (indice)
-	mov r2, #0				@; inicializar un 0 en R3
+	mov r2, #0				@; inicializar un 0 en R2
 	str r2, [r1]			@; y guardar el 0 en el campo PID (primer campo)
 	bl _gp_desinhibirIRQs
 
 	@; inicializar variables para buscar en la cola RDY
-	ldr r1, =_gd_qReady
-	ldr r2, =_gd_nReady
-	ldr r3, [r2]
-	mov r4, #0
+	ldr r1, =_gd_qReady		@; cargar direccion de la cola RDY para buscar el zocalo
+	ldr r2, =_gd_nReady		@; cargar direccion de la variable _gd_nReady
+	ldr r3, [r2]			@; obtener su valor
+	mov r4, #0				@; inicializar indice a 0
 
 	@; buscar zocalo en la cola RDY
 .LfindProcRDY:
-	cmp r4, r3
-	beq .LdelaySetup
-	ldrb r5, [r1, r4]
-	cmp r5, r0
-	addne r4, #1
-	bne .LfindProcRDY
+	cmp r4, r3				@; comprobar si ha llegado al final
+	beq .LdelaySetup		@; si no lo ha encontrado, buscar en la cola DLY
+	ldrb r5, [r1, r4]		@; obtener valor del zocalo
+	cmp r5, r0				@; comprobar si es el mismo que el que queremos matar
+	addne r4, #1			@; en caso que no, sumar 1 al indice
+	bne .LfindProcRDY		@; y volver a iterar
 
 	@; desplazar procesos hacia adelante de la cola RDY
 	bl _gp_inhibirIRQs
@@ -650,15 +645,15 @@ _gp_matarProc:
 
 	@; inicializar variables para buscar en la cola DLY
 .LdelaySetup:
-	ldr r1, =_gd_qDelay
-	ldr r2, =_gd_nDelay
-	ldr r3, [r2]
-	mov r4, #0
+	ldr r1, =_gd_qDelay		@; cargar direccion de la cola DLY para buscar el zocalo
+	ldr r2, =_gd_nDelay		@; cargar la direccion de la variable _gd_nDelay
+	ldr r3, [r2]			@; obtener su valor
+	mov r4, #0				@; inicializar indice a 0
 
 	@; buscar zocalo en la cola DLY
 .LfindProcDLY:
 	cmp r4, r3				@; comprobar si se ha llegado al final
-	beq .Lcleanup			@; si se ha recorrido todo, salir de la funcion
+	beq .LblockSetup		@; si se ha recorrido todo, salir de la funcion
 	ldr r5, [r1, r4, lsl #2]		@; si no, cargar el zocalo correspondiente de la cola
 	mov r5, r5, lsr #24		@; quedarse con los 8 bits altos (zocalo)
 	cmp r5, r0				@; comprobar si es igual al indicado
@@ -677,20 +672,48 @@ _gp_matarProc:
 	add r4, #1				@; incrementar indice en 1
 	b .LshiftQueueRDY		@; y seguir iterando
 
+	@; inicializar las variables para buscar en la lista BLK
+.LblockSetup:
+	ldr r1, =_gd_qBlock		@; cargar direccion de la lista de procesos bloqueados
+	ldr r2, =_gd_mutex		@; cargar direccion de la lista de semaforos
+	mov r3, #8				@; inicializar R3 con un 8 porque solo hay 8 semaforos
+	mov r4, #0				@; inicializar indice a 0
+
+	@; buscar el proceso en la lista BLK
+.LfindProcBLK:
+	cmp r4, r3				@; comprobar si se ha llegado al final
+	beq .LfinMatar			@; si se ha recorrido todo, salir de la funcion
+	ldrb r5, [r1, r4]		@; si no, cargar zocalo
+	cmp r5, r0				@; comprobar si es el que se quiere matar
+	addne r4, #1			@; si no, ir al siguiente elemento
+	bne .LfindProcBLK		@; y volver a iterar
+
+	@; restaurar la entrada del proceso de la lista BLK a 0
+	bl _gp_inhibirIRQs
+	mov r5, #0				@; mover un 0 a R5
+	strb r5, [r1, r4]		@; para guardarlo en el lugar del zocalo en la lista BLK
+	mov r5, #1				@; mover un 1 a R5
+	strb r5, [r2, r4]		@; para indicar que el semaforo que usaba el zocalo esta libre ahora
+	ldr r1, =_gd_nBlock		@; cargar direccion del numero de procesos en BLK
+	ldr r2, [r1]			@; obtener su valor
+	sub r2, #1				@; restarle 1
+	str r2, [r1]			@; y guardarlo de nuevo
+	b .LfinMatar			@; acabar rutina
+
 	@; cambios finales de matar el proceso
 .Lcleanup:
 	sub r3, #1				@; restar 1 al numero de elementos en la cola en la que se estaba iterando
 	str r3, [r2]			@; y actualizar su valor
-	bl _gp_desinhibirIRQs
 
 .LfinMatar:
+	bl _gp_desinhibirIRQs
 
 	pop {r1-r5, pc}
 
 	
 	.global _gp_retardarProc
 	@; retarda la ejecucion de un proceso durante cierto numero de segundos,
-	@; colocandolo en la cola de DELAY
+	@; colocandolo en la cola de DLY
 	@;Parametros
 	@; R0: int nsec
 _gp_retardarProc:
@@ -709,12 +732,12 @@ _gp_retardarProc:
 	mov r3, r3, lsl #24		@; desplazar zocalo a los 8 bits altos
 	orr r1, r3				@; juntar bits de zocalo con el numero de ticks a retardar
 	
-	@; Poner el proceso actual a la cola DELAY
+	@; Poner el proceso actual a la cola DLY
 	ldr r2, =_gd_nDelay		@; cargar direccion de _gd_nDelay
 	ldr r3, [r2]			@; obtener su valor
 	ldr r4, =_gd_qDelay		@; cargar la direccion de _gd_qDelay
 	str r1, [r4, r3, lsl #2]		@; guardar word construido en la siguiente posicion libre
-	add r3, #1				@; incrementar en 1 el numero de procesos en DELAY
+	add r3, #1				@; incrementar en 1 el numero de procesos en DLY
 	str r3, [r2]			@; guardar el nuevo valor
 
 	bl _gp_WaitForVBlank	@; forzar un cambio de contexto
@@ -758,10 +781,83 @@ _gp_desinhibirIRQs:
 	@; grafico secundario esta correctamente configurado, se imprime en la
 	@; columna correspondiente de la tabla de procesos.
 _gp_rsiTIMER0:
-	push {lr}
+	push {r0-r7, lr}
 
-	
-	pop {pc}
+	ldr r0, =_gd_pcbs		@; cargar direccion base de los PCBs
+	ldr r1, =_gd_qReady		@; cargar direccion base de la cola RDY
+	ldr r2, =_gd_nReady		@; cargar direccion de la variable _gd_nReady
+	ldr r2, [r2]			@; obtener su valor
+	mov r3, #0				@; indice para recorrer las diferentes colas
+	mov r4, #0				@; contador para calcular el total de workTicks
+
+	@; bucle para sumar workTicks de los procesos en RDY
+.LcountRDY:
+	ldrb r5, [r1, r3]		@; obtener zocalo del proceso
+	mov r6, #24				@; guardar tamaño de un PCB
+	mla r7, r5, r6, r0		@; obtener direccion base del PCB del zocalo obtenido
+	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
+	add r4, r6				@; sumar workTicks al contador total
+
+	add r3, #1				@; sumar 1 al indice
+	cmp r3, r2				@; comparamos si hemos visto todos los procesos
+	blo .LcountRDY			@; si aun quedan, volver a iterar
+
+	@; preparar variables para hacer lo mismo en la cola DLY
+	ldr r2, =_gd_nDelay		@; cargar la direccion de la variable _gd_nDelay
+	ldr r2, [r2]			@; obtener su valor
+	cmp r2, #0				@; comprobar si hay procesos en DLY
+	beq .LskipDLY			@; si no los hay, saltarse el bucle
+	ldr r1, =_gd_qDelay		@; cargar direccion de la cola DLY
+	mov r3, #0				@; restablecer indice a 0
+
+	@; bucle para sumar workTicks de los procesos en DLY
+.LcountDLY:
+	ldr r5, [r1, r3, lsl #2]		@; obtener valor del proceso en DLY
+	mov r5, r5, lsr #24		@; desplazar los 8 bits altos a la derecha para obtener el zocalo
+	mov r6, #24				@; guardar tamaño de un PCB
+	mla r7, r5, r6, r0		@; obtener direccion base del PCB del zocalo obtenido
+	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
+	add r4, r6				@; sumar workTicks al contador total
+
+	add r3, #1				@; sumar 1 al indice
+	cmp r3, r2				@; comparamos si hemos visto todos los procesos
+	blo .LcountDLY			@; si aun quedan, volver a iterar
+
+	@; preparar variables para hacer lo mismo en la lista BLK
+.LskipDLY:
+	ldr r2, =_gd_nBlock		@; cargar la direccion de la variable _gd_nDelay
+	ldr r2, [r2]			@; obtener su valor
+	cmp r2, #0				@; comprobar si hay procesos en BLK
+	beq .LskipBLK			@; si no los hay, saltarse el bucle
+	mov r2, #8				@; mover un 8 a R2 porque solo hay 8 semaforos
+	ldr r1, =_gd_qBlock		@; cargar direccion de la lista BLK
+	mov r3, #0				@; restablecer indice a 0
+
+	@; bucle para sumar workTicks de los procesos en DLY
+.LcountBLK:
+	ldrb r5, [r1, r3]		@; obtener zocalo del proceso
+	cmp r5, #0				@; si es 0 (no hay ningun proceso bloqueado en este semaforo)
+	beq .LnextMutex			@; pasar al siguiente semaforo
+	mov r6, #24				@; guardar tamaño de un PCB
+	mla r7, r5, r6, r0		@; obtener direccion base del PCB del zocalo obtenido
+	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
+	add r4, r6				@; sumar workTicks al contador total
+
+.LnextMutex:
+	add r3, #1				@; sumar 1 al indice
+	cmp r3, r2				@; comparamos si hemos visto todos los semaforos
+	blo .LcountBLK			@; si aun quedan, volver a iterar
+
+
+.LskipBLK:
+	@; ahora R4 contiene el numero total de workTicks
+	@; calcular porcentaje de cada proceso y poner su campo workTicks a 0
+
+
+	@; TODO next
+
+
+	pop {r0-r7, pc}
 
 	
 .end
