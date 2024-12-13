@@ -141,7 +141,7 @@ _gp_salvarProc:
 	ldr r8, [r6]			@; obtener valor de _gd_pidz
 	tst r8, #0x80000000		@; ver si el bit de mas peso esta activo
 	and r8, #0xF			@; quedarse con los 4 bits bajos (zocalo) para calcular direcciones de memoria
-	bne .LskipRDY			@; si el bit esta activo (flag Z = 0) no guardar proceso a la cola RDY
+	bne .LnoSaveRDY			@; si el bit esta activo (flag Z = 0) no guardar proceso a la cola RDY
 	
 	ldr r9, =_gd_qReady		@; cargar direccion de la cola de RDY
 	strb r8, [r9, r5]		@; guardar zocalo en la cola RDY
@@ -152,7 +152,7 @@ _gp_salvarProc:
 	str r5, [r4]			@; guardar nuevo numero en memoria
 	@; Fin incrementar variable nReady
 
-.LskipRDY:
+.LnoSaveRDY:
 	@; Guardar registros en el PCB y la pila
 		@; Guardar R15(PC) en el PCB
 	ldr r9, =_gd_pcbs		@; cargar direccion base e los PCBs
@@ -786,12 +786,22 @@ _gp_desinhibirIRQs:
 _gp_rsiTIMER0:
 	push {r0-r8, lr}
 
+	@; primero sumar campo workTicks del proceso en RUN
 	ldr r0, =_gd_pcbs		@; cargar direccion base de los PCBs
+	ldr r1, =_gd_pidz		@; cargar direccion de _gd_pidz
+	ldr r2, [r1]			@; obtener el valor del proceso activo actualmente
+	and r2, #0xF			@; quedarse con los bits de zocalo
+	mov r1, #24				@; tamaño de un PCB
+	mla r3, r1, r2, r0		@; R3 = direccion base del PCB del zocalo
+	ldr r4, [r3, #20]		@; R4 sera el contador total de tics
+
+	@; preparar registros para sumar el resto de workTicks
 	ldr r1, =_gd_qReady		@; cargar direccion base de la cola RDY
 	ldr r2, =_gd_nReady		@; cargar direccion de la variable _gd_nReady
 	ldr r2, [r2]			@; obtener su valor
+	cmp r2, #0				@; si no hay procesos en la cola RDY
+	beq .LskipRDY			@; saltar a la siguiente cola
 	mov r3, #0				@; indice para recorrer las diferentes colas
-	mov r4, #0				@; contador para calcular el total de workTicks
 
 	@; bucle para sumar workTicks de los procesos en RDY
 .LcountRDY:
@@ -799,13 +809,14 @@ _gp_rsiTIMER0:
 	mov r6, #24				@; guardar tamaño de un PCB
 	mla r7, r5, r6, r0		@; obtener direccion base del PCB del zocalo obtenido
 	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
-	bic r6, #0xFF000000		@; eliminar porcentaje anterior
+	bic r6, #0xFF000000		@; eliminar porcentaje anterior (por si no se ha reseteado)
 	add r4, r6				@; sumar workTicks al contador total
 
 	add r3, #1				@; sumar 1 al indice
 	cmp r3, r2				@; comparamos si hemos visto todos los procesos
 	blo .LcountRDY			@; si aun quedan, volver a iterar
 
+.LskipRDY:
 	@; preparar variables para hacer lo mismo en la cola DLY
 	ldr r2, =_gd_nDelay		@; cargar la direccion de la variable _gd_nDelay
 	ldr r2, [r2]			@; obtener su valor
@@ -821,7 +832,7 @@ _gp_rsiTIMER0:
 	mov r6, #24				@; guardar tamaño de un PCB
 	mla r7, r5, r6, r0		@; obtener direccion base del PCB del zocalo obtenido
 	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
-	bic r6, #0xFF000000		@; eliminar porcentaje anterior
+	bic r6, #0xFF000000		@; eliminar porcentaje anterior (por si no se ha reseteado)
 	add r4, r6				@; sumar workTicks al contador total
 
 	add r3, #1				@; sumar 1 al indice
@@ -846,7 +857,7 @@ _gp_rsiTIMER0:
 	mov r6, #24				@; guardar tamaño de un PCB
 	mla r7, r5, r6, r0		@; obtener direccion base del PCB del zocalo obtenido
 	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
-	bic r6, #0xFF000000		@; eliminar porcentaje anterior
+	bic r6, #0xFF000000		@; eliminar porcentaje anterior (por si no se ha reseteado)
 	add r4, r6				@; sumar workTicks al contador total
 
 .LskipMutex:
@@ -858,40 +869,58 @@ _gp_rsiTIMER0:
 .LskipBLK:
 
 	mov r8, r4				@; ahora R8 contiene el numero total de workTicks
-	ldr r1, =_gd_qReady		@; cargar direccion base de la cola RDY
-	ldr r2, =_gd_nReady		@; cargar direccion de la variable _gd_nReady
-	ldr r2, [r2]			@; obtener su valor
-	mov r3, #0				@; indice para recorrer las diferentes colas
-	mov r4, #24				@; guardar tamaño de un PCB
+	
+	@; calcular porcentaje uso del proceso en RUN
+	ldr r1, =_gd_pidz
+	ldr r2, [r1]
+	and r2, #0xF
+	mov r1, #24
+	mla r3, r1, r2, r0
+	ldr r6, [r3, #20]
+	bic r6, #0xFF000000
 
-	@; calcular porcentaje de cada proceso y poner su campo workTicks a 0 (cola RDY)
-.LreadRDY:
-	ldrb r5, [r1, r3]		@; obtener zocalo del proceso			
-	mla r7, r5, r4, r0		@; obtener direccion base del PCB del zocalo obtenido
-	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
-	bic r6, #0xFF000000		@; eliminar porcentaje anterior
-
-	@; obtener cuantas veces cabe el campo workTicks en el total
 	push {r0-r3}			@; salvar estado de los registros R0-R3
 	sub sp, #8				@; guardar espacio en la pila para el cociente y el resto
-	mov r0, r8				@; pasar el numerador
-	mov r1, r6				@; pasar el denominador
+	mov r0, r6				@; pasar el numerador
+	mov r6, #100			@; mover un 100 a R6
+	mul r0, r6				@; y multiplicar para hacer el calculo (100*workTicks/ticksTotales = %uso)
+	mov r1, r8				@; pasar el denominador
 	mov r2, sp				@; pasar direccion de memoria para el cociente
 	add r3, sp, #4			@; pasar direccion de memoria para el resto
 	bl _ga_divmod			@; hacer la división
 	pop {r4-r5}				@; R4 = cociente y R5 = resto
+	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
+	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
+	str r4, [r3, #20]		@; guardar porcentaje en el campo workTicks
 
-	@; usando el resultado anterior, calcular porcentaje
+	@; calcular porcentaje de cada proceso y poner su campo workTicks a 0 (cola RDY)
+	ldr r1, =_gd_qReady		@; cargar direccion base de la cola RDY
+	ldr r2, =_gd_nReady		@; cargar direccion de la variable _gd_nReady
+	ldr r2, [r2]			@; obtener su valor
+	cmp r2, #0				@; comprobar si hay elementos en la cola
+	beq .LnoreadRDY			@; saltarla si no hay elementos
+	mov r3, #0				@; indice para recorrer las diferentes colas
+	mov r4, #24				@; guardar tamaño de un PCB
+
+.LreadRDY:
+	ldrb r5, [r1, r3]		@; obtener zocalo del proceso			
+	mla r7, r5, r4, r0		@; obtener direccion base del PCB del zocalo obtenido
+	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
+	bic r6, #0xFF000000		@; eliminar porcentaje anterior (por si no se ha reseteado)
+
+	@; calcular porcentaje de uso de cpu (aproximadamente, no es 100% preciso)
+	push {r0-r3}			@; salvar estado de los registros R0-R3
 	sub sp, #8				@; guardar espacio en la pila para el cociente y el resto
-	mov r0, #100			@; pasar el numerador
-	mov r1, r4				@; pasar el denominador
+	mov r0, r6				@; pasar el numerador
+	mov r6, #100			@; mover un 100 a R6
+	mul r0, r6				@; y multiplicar para hacer el calculo (100*workTicks/ticksTotales = %uso)
+	mov r1, r8				@; pasar el denominador
 	mov r2, sp				@; pasar direccion de memoria para el cociente
 	add r3, sp, #4			@; pasar direccion de memoria para el resto
 	bl _ga_divmod			@; hacer la división
-	pop {r4-r5}				@; R4 = cociente y R5 = resto (R4 = %)
+	pop {r4-r5}				@; R4 = cociente y R5 = resto
 	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
 	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
-	and r4, #0xFF000000		@; asegurarse que el resultado no sobrepasa los 8 bits
 	str r4, [r7, #20]		@; guardar porcentaje en el campo workTicks
 
 	mov r4, #24				@; restablecer R4 al tamaño de un PCB
@@ -899,6 +928,7 @@ _gp_rsiTIMER0:
 	cmp r3, r2				@; comparamos si hemos visto todos los procesos
 	blo .LreadRDY			@; si aun quedan, volver a iterar
 
+.LnoreadRDY:
 	@; preparar variables para recorrer la cola DLY
 	ldr r2, =_gd_nDelay		@; cargar la direccion de la variable _gd_nDelay
 	ldr r2, [r2]			@; obtener su valor
@@ -913,29 +943,21 @@ _gp_rsiTIMER0:
 	mov r5, r5, lsr #24		@; desplazar los 8 bits altos a la derecha para obtener el zocalo
 	mla r7, r5, r4, r0		@; obtener direccion base del PCB del zocalo obtenido
 	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
-	bic r6, #0xFF000000		@; eliminar porcentaje anterior
+	bic r6, #0xFF000000		@; eliminar porcentaje anterior (por si no se ha reseteado)
 	
-	@; obtener cuantas veces cabe el campo workTicks en el total
+	@; calcular porcentaje de uso de cpu (aproximadamente, no es 100% preciso)
 	push {r0-r3}			@; salvar estado de los registros R0-R3
 	sub sp, #8				@; guardar espacio en la pila para el cociente y el resto
-	mov r0, r8				@; pasar el numerador
-	mov r1, r6				@; pasar el denominador
+	mov r0, r6				@; pasar el numerador
+	mov r6, #100			@; mover un 100 a R6
+	mul r0, r6				@; y multiplicar para hacer el calculo (100*workTicks/ticksTotales = %uso)
+	mov r1, r8				@; pasar el denominador
 	mov r2, sp				@; pasar direccion de memoria para el cociente
 	add r3, sp, #4			@; pasar direccion de memoria para el resto
 	bl _ga_divmod			@; hacer la división
 	pop {r4-r5}				@; R4 = cociente y R5 = resto
-
-	@; usando el resultado anterior, calcular porcentaje
-	sub sp, #8				@; guardar espacio en la pila para el cociente y el resto
-	mov r0, #100			@; pasar el numerador
-	mov r1, r4				@; pasar el denominador
-	mov r2, sp				@; pasar direccion de memoria para el cociente
-	add r3, sp, #4			@; pasar direccion de memoria para el resto
-	bl _ga_divmod			@; hacer la división
-	pop {r4-r5}				@; R4 = cociente y R5 = resto (R4 = %)
 	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
 	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
-	and r4, #0xFF000000		@; asegurarse que el resultado no sobrepasa los 8 bits
 	str r4, [r7, #20]		@; guardar porcentaje en el campo workTicks
 
 	mov r4, #24				@; restablecer R4 al tamaño de un PCB
@@ -960,29 +982,21 @@ _gp_rsiTIMER0:
 	beq .LnextMutex			@; pasar al siguiente semaforo
 	mla r7, r5, r4, r0		@; obtener direccion base del PCB del zocalo obtenido
 	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
-	bic r6, #0xFF000000		@; eliminar porcentaje anterior
+	bic r6, #0xFF000000		@; eliminar porcentaje anterior (por si no se ha reseteado)
 
-	@; obtener cuantas veces cabe el campo workTicks en el total
+	@; calcular porcentaje de uso de cpu (aproximadamente, no es 100% preciso)
 	push {r0-r3}			@; salvar estado de los registros R0-R3
 	sub sp, #8				@; guardar espacio en la pila para el cociente y el resto
-	mov r0, r8				@; pasar el numerador
-	mov r1, r6				@; pasar el denominador
+	mov r0, r6				@; pasar el numerador
+	mov r6, #100			@; mover un 100 a R6
+	mul r0, r6				@; y multiplicar para hacer el calculo (100*workTicks/ticksTotales = %uso)
+	mov r1, r8				@; pasar el denominador
 	mov r2, sp				@; pasar direccion de memoria para el cociente
 	add r3, sp, #4			@; pasar direccion de memoria para el resto
 	bl _ga_divmod			@; hacer la división
 	pop {r4-r5}				@; R4 = cociente y R5 = resto
-
-	@; usando el resultado anterior, calcular porcentaje
-	sub sp, #8				@; guardar espacio en la pila para el cociente y el resto
-	mov r0, #100			@; pasar el numerador
-	mov r1, r4				@; pasar el denominador
-	mov r2, sp				@; pasar direccion de memoria para el cociente
-	add r3, sp, #4			@; pasar direccion de memoria para el resto
-	bl _ga_divmod			@; hacer la división
-	pop {r4-r5}				@; R4 = cociente y R5 = resto (R4 = %)
 	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
 	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
-	and r4, #0xFF000000		@; asegurarse que el resultado no sobrepasa los 8 bits
 	str r4, [r7, #20]		@; guardar porcentaje en el campo workTicks
 
 .LnextMutex:
@@ -1026,7 +1040,7 @@ _gp_rsiTIMER0:
 	ldr r0, =_gd_sincMain	@; cargar direccion de _gd_sincMain
 	ldr r1, [r0]			@; obtener su valor
 	orr r1, #0x1			@; poner a 1 el bit 0
-	str r1, [r0]			@; y guardarlo de nuevoc
+	str r1, [r0]			@; y guardarlo de nuevo
 
 	pop {r0-r8, pc}
 
