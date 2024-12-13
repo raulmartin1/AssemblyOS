@@ -608,7 +608,7 @@ _gp_terminarProc:
 	@; Parametros:
 	@;	R0:	zocalo del proceso a matar (entre 1 y 15).
 _gp_matarProc:
-	push {r1-r5, lr}
+	push {r1-r7, lr}
 
 	@; poner campo PID a 0 de _gd_pcbs del zocalo indicado
 	bl _gp_inhibirIRQs
@@ -634,8 +634,14 @@ _gp_matarProc:
 	addne r4, #1			@; en caso que no, sumar 1 al indice
 	bne .LfindProcRDY		@; y volver a iterar
 
-	@; desplazar procesos hacia adelante de la cola RDY
+	@; desplazar procesos hacia adelante de la cola RDY y borrar workTicks del PCB
 	bl _gp_inhibirIRQs
+	ldr r6, =_gd_pcbs		@; cargar direccion de los PCBs
+	mov r7, #24				@; mover espacio que ocupa un PCB
+	mla r7, r5, r7, r6		@; calcular direccion base del PCB del zocalo
+	mov r6, #0				@; mover un 0 en R6
+	str r6, [r7, #20]		@; para luego guardarlo en el campo workTicks
+
 .LshiftQueueRDY:
 	add r4, #1				@; sumar 1 al indice para ver si hay mas elementos
 	cmp r4, r3				@; comparar indice con el numero de elementos que habia originalmente (R3)
@@ -663,8 +669,14 @@ _gp_matarProc:
 	addne r4, #1			@; en caso que no, sumar 1 al indice
 	bne .LfindProcDLY		@; e iterar de nuevo
 
-	@; desplazar procesos hacia adelante de la cola RDY
+	@; desplazar procesos hacia adelante de la cola DLY y borrar workTicks del PCB
 	bl _gp_inhibirIRQs
+	ldr r6, =_gd_pcbs		@; cargar direccion de los PCBs
+	mov r7, #24				@; mover espacio que ocupa un PCB
+	mla r7, r5, r7, r6		@; calcular direccion base del PCB del zocalo
+	mov r6, #0				@; mover un 0 en R6
+	str r6, [r7, #20]		@; para luego guardarlo en el campo workTicks
+
 .LshiftQueueDLY:
 	add r4, #1				@; sumar 1 al indice para ver si hay mas elementos
 	cmp r4, r3				@; comparar indice con el numero de elementos que habia originalmente (R3)
@@ -691,8 +703,13 @@ _gp_matarProc:
 	addne r4, #1			@; si no, ir al siguiente elemento
 	bne .LfindProcBLK		@; y volver a iterar
 
-	@; restaurar la entrada del proceso de la lista BLK a 0
+	@; restaurar la entrada del proceso de la lista BLK a 0 y borrar workTicks del PCB
 	bl _gp_inhibirIRQs
+	ldr r6, =_gd_pcbs		@; cargar direccion de los PCBs
+	mov r7, #24				@; mover espacio que ocupa un PCB
+	mla r7, r5, r7, r6		@; calcular direccion base del PCB del zocalo
+	mov r6, #0				@; mover un 0 en R6
+	str r6, [r7, #20]		@; para luego guardarlo en el campo workTicks
 	mov r5, #0				@; mover un 0 a R5
 	strb r5, [r1, r4]		@; para guardarlo en el lugar del zocalo en la lista BLK
 	mov r5, #1				@; mover un 1 a R5
@@ -711,7 +728,7 @@ _gp_matarProc:
 .LfinMatar:
 	bl _gp_desinhibirIRQs
 
-	pop {r1-r5, pc}
+	pop {r1-r7, pc}
 
 	
 	.global _gp_retardarProc
@@ -794,6 +811,7 @@ _gp_rsiTIMER0:
 	mov r1, #24				@; tamaño de un PCB
 	mla r3, r1, r2, r0		@; R3 = direccion base del PCB del zocalo
 	ldr r4, [r3, #20]		@; R4 sera el contador total de tics
+	bic r4, #0xFF000000		@; eliminar porcentaje anterior
 
 	@; preparar registros para sumar el resto de workTicks
 	ldr r1, =_gd_qReady		@; cargar direccion base de la cola RDY
@@ -871,13 +889,13 @@ _gp_rsiTIMER0:
 	mov r8, r4				@; ahora R8 contiene el numero total de workTicks
 	
 	@; calcular porcentaje uso del proceso en RUN
-	ldr r1, =_gd_pidz
-	ldr r2, [r1]
-	and r2, #0xF
-	mov r1, #24
-	mla r3, r1, r2, r0
-	ldr r6, [r3, #20]
-	bic r6, #0xFF000000
+	ldr r1, =_gd_pidz		@; cargar direccion de _gd_pidz
+	ldr r2, [r1]			@; obtener su valor
+	and r2, #0xF			@; filtrar bits para obtener zocalo del proceso en RUN
+	mov r1, #24				@; mover espacio que ocupa un PCB
+	mla r3, r1, r2, r0		@; calcular direccion del PCB del zocalo obtenido anteriormente
+	ldr r6, [r3, #20]		@; cargar el valor del campo workTicks
+	bic r6, #0xFF000000		@; quitar bits de porcentaje
 
 	push {r0-r3}			@; salvar estado de los registros R0-R3
 	sub sp, #8				@; guardar espacio en la pila para el cociente y el resto
