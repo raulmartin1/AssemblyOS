@@ -839,7 +839,7 @@ _gp_desinhibirIRQs:
 	@; grafico secundario esta correctamente configurado, se imprime en la
 	@; columna correspondiente de la tabla de procesos.
 _gp_rsiTIMER0:
-	push {r0-r8, lr}
+	push {r0-r9, lr}
 
 	@; primero sumar campo workTicks del proceso en RUN
 	ldr r0, =_gd_pcbs		@; cargar direccion base de los PCBs
@@ -929,6 +929,7 @@ _gp_rsiTIMER0:
 	ldr r1, =_gd_pidz		@; cargar direccion de _gd_pidz
 	ldr r2, [r1]			@; obtener su valor
 	and r2, #0xF			@; filtrar bits para obtener zocalo del proceso en RUN
+	mov r9, r2				@; guardar una copia del zocalo actual
 	mov r1, #24				@; mover espacio que ocupa un PCB
 	mla r3, r1, r2, r0		@; calcular direccion del PCB del zocalo obtenido anteriormente
 	ldr r6, [r3, #20]		@; cargar el valor del campo workTicks
@@ -944,6 +945,16 @@ _gp_rsiTIMER0:
 	add r3, sp, #4			@; pasar direccion de memoria para el resto
 	bl _ga_divmod			@; hacer la división
 	pop {r4-r5}				@; R4 = cociente y R5 = resto
+
+	bl _gp_inhibirIRQs
+	bl _gp_intToASCII		@; convertir porcentaje de R4 a caracteres ASCII
+	ldr r0, =_gp_msg		@; direccion inicial del string de porcentaje
+	add r1, r9, #4			@; fila donde se mostrara (zocalo + 4 filas)
+	mov r2, #28				@; columna donde se mostrara
+	mov r3, #0				@; color del texto
+	bl _gs_escribirStringSub	@; llamada a rutina para mostrar el texto en la pantalla inferior
+	bl _gp_desinhibirIRQs
+
 	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
 	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
 	str r4, [r3, #20]		@; guardar porcentaje en el campo workTicks
@@ -958,7 +969,8 @@ _gp_rsiTIMER0:
 	mov r4, #24				@; guardar tamaño de un PCB
 
 .LreadRDY:
-	ldrb r5, [r1, r3]		@; obtener zocalo del proceso			
+	ldrb r5, [r1, r3]		@; obtener zocalo del proceso
+	mov r9, r5				@; hacer una copia del zocalo para la pantalla inferior
 	mla r7, r5, r4, r0		@; obtener direccion base del PCB del zocalo obtenido
 	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
 	bic r6, #0xFF000000		@; eliminar porcentaje anterior (por si no se ha reseteado)
@@ -974,6 +986,16 @@ _gp_rsiTIMER0:
 	add r3, sp, #4			@; pasar direccion de memoria para el resto
 	bl _ga_divmod			@; hacer la división
 	pop {r4-r5}				@; R4 = cociente y R5 = resto
+
+	bl _gp_inhibirIRQs
+	bl _gp_intToASCII		@; convertir porcentaje de R4 a caracteres ASCII
+	ldr r0, =_gp_msg		@; direccion inicial del string de porcentaje
+	add r1, r9, #4			@; fila donde se mostrara (zocalo + 4 filas)
+	mov r2, #28				@; columna donde se mostrara
+	mov r3, #0				@; color del texto
+	bl _gs_escribirStringSub	@; llamada a rutina para mostrar el texto en la pantalla inferior
+	bl _gp_desinhibirIRQs
+
 	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
 	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
 	str r4, [r7, #20]		@; guardar porcentaje en el campo workTicks
@@ -996,6 +1018,7 @@ _gp_rsiTIMER0:
 .LreadDLY:
 	ldr r5, [r1, r3, lsl #2]		@; obtener valor del proceso en DLY
 	mov r5, r5, lsr #24		@; desplazar los 8 bits altos a la derecha para obtener el zocalo
+	mov r9, r5				@; guardar una copia del zocalo para la pantalla inferior
 	mla r7, r5, r4, r0		@; obtener direccion base del PCB del zocalo obtenido
 	ldr r6, [r7, #20]		@; obtener valor del campo workTicks
 	bic r6, #0xFF000000		@; eliminar porcentaje anterior (por si no se ha reseteado)
@@ -1011,6 +1034,16 @@ _gp_rsiTIMER0:
 	add r3, sp, #4			@; pasar direccion de memoria para el resto
 	bl _ga_divmod			@; hacer la división
 	pop {r4-r5}				@; R4 = cociente y R5 = resto
+
+	bl _gp_inhibirIRQs
+	bl _gp_intToASCII		@; convertir porcentaje de R4 a caracteres ASCII
+	ldr r0, =_gp_msg		@; direccion inicial del string de porcentaje
+	add r1, r9, #4			@; fila donde se mostrara (zocalo + 4 filas)
+	mov r2, #28				@; columna donde se mostrara
+	mov r3, #0				@; color del texto
+	bl _gs_escribirStringSub	@; llamada a rutina para mostrar el texto en la pantalla inferior
+	bl _gp_desinhibirIRQs
+
 	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
 	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
 	str r4, [r7, #20]		@; guardar porcentaje en el campo workTicks
@@ -1033,6 +1066,7 @@ _gp_rsiTIMER0:
 	@; calcular porcentaje de cada proceso y poner su campo workTicks a 0 (cola BLK)
 .LreadBLK:
 	ldrb r5, [r1, r3]		@; obtener zocalo del proceso
+	mov r9, r5				@; guardar una copia del zocalo para la pantalla inferior
 	cmp r5, #0				@; si es 0 (no hay ningun proceso bloqueado en este semaforo)
 	beq .LnextMutex			@; pasar al siguiente semaforo
 	mla r7, r5, r4, r0		@; obtener direccion base del PCB del zocalo obtenido
@@ -1050,6 +1084,16 @@ _gp_rsiTIMER0:
 	add r3, sp, #4			@; pasar direccion de memoria para el resto
 	bl _ga_divmod			@; hacer la división
 	pop {r4-r5}				@; R4 = cociente y R5 = resto
+
+	bl _gp_inhibirIRQs
+	bl _gp_intToASCII		@; convertir porcentaje de R4 a caracteres ASCII
+	ldr r0, =_gp_msg		@; direccion inicial del string de porcentaje
+	add r1, r9, #4			@; fila donde se mostrara (zocalo + 4 filas)
+	mov r2, #28				@; columna donde se mostrara
+	mov r3, #0				@; color del texto
+	bl _gs_escribirStringSub	@; llamada a rutina para mostrar el texto en la pantalla inferior
+	bl _gp_desinhibirIRQs
+
 	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
 	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
 	str r4, [r7, #20]		@; guardar porcentaje en el campo workTicks
@@ -1062,8 +1106,6 @@ _gp_rsiTIMER0:
 
 .LnoreadBLK:
 
-	@; TODO (mostrar % en la pantalla inferior)
-
 	@; poner a 1 el bit 0 de _gd_sincMain para indicar al programa
 	@; principal que dispone de los porcentajes de uso de CPU
 	ldr r0, =_gd_sincMain	@; cargar direccion de _gd_sincMain
@@ -1071,6 +1113,49 @@ _gp_rsiTIMER0:
 	orr r1, #0x1			@; poner a 1 el bit 0
 	str r1, [r0]			@; y guardarlo de nuevo
 
-	pop {r0-r8, pc}
+	pop {r0-r9, pc}
+
+
+	@; Rutina local para convertir un porcentaje indicado por R4 a caracteres ASCII
+	@; que se guardaran en la variable local _gp_msg
+	@; Parametros:
+	@;	R4:	porcentaje a convertir en caracteres ASCII
+	@; Resultado:
+	@;  Se guarda en la variable local _gp_msg directamente
+_gp_intToASCII:
+
+	push {r0-r3, r5-r6, lr}
+
+	ldr r5, =_gp_msg		@; cargar direccion del texto a escribir
+	mov r6, #0				@; mover un 0 en R6
+	strb r6, [r5, #3]		@; y guardarlo como centinela al final del texto
+	mov r6, #2				@; iniciar R6 con el indice 2 (tercer caracter del string)
+	mov r0, r4				@; pasar por parametro R0 el porcentaje
+	mov r1, #10				@; pasar por parametro R1 el numero 10 para obtener el ultimo digito
+
+.LdivLoop:
+	sub sp, #8				@; reservar espacio en memoria para resultados
+	mov r2, sp				@; pasar direccion de memoria para el cociente
+	add r3, sp, #4			@; y la direccion para el resto
+	bl _ga_divmod			@; dividir valor del porcentaje / 10
+	pop {r2-r3}				@; recuperar resultados
+
+	add r3, #'0'			@; sumar el valor del caracter '0' al resto para obtener el codigo ASCII correspondiente
+	strb r3, [r5, r6]		@; guardarlo en la posicion actual de la variable para mostrar el porcentaje
+	sub r6, #1				@; pasar al siguiente indice
+	cmp r6, #0				@; comprobar si es el ultimo indice
+	movhi r0, r2			@; si no lo es, pasar el resultado a R0 para dividirlo de nuevo
+	bhi .LdivLoop			@; hacer division nuevamente
+
+	cmp r2, #0
+	addeq r2, #' '
+	addhi r2, #'0'
+	strb r2, [r5]
+
+	pop {r0-r3, r5-r6, pc}
+
+
+_gp_msg:
+	.space 4
 	
 .end
