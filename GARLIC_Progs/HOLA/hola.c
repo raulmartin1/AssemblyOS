@@ -19,6 +19,20 @@ int _start(int arg)				/* funci�n de inicio : no se usa 'main' */
 	
 									// esccribir mensaje inicial
 	GARLIC_printf("-- Programa HOLA  -  PID (%d) --\n", GARLIC_pid());
+
+	GARLIC_delay(arg);
+
+	GARLIC_printf("If arg=2, arg->3\n");
+
+	if(arg == 2) arg++;
+
+	GARLIC_printf("WaitS en semaforo %d!\n", arg);
+
+	int temp = GARLIC_wait(arg);
+
+	GARLIC_printf("Retorno waitS: %d\n", temp);
+
+	GARLIC_printf("SignalS en semaforo %d!\n", arg);
 	
 	j = 1;							// j = c�lculo de 10 elevado a arg
 	for (i = 0; i < arg; i++)
@@ -26,6 +40,8 @@ int _start(int arg)				/* funci�n de inicio : no se usa 'main' */
 						// c�lculo aleatorio del n�mero de iteraciones 'iter'
 	GARLIC_divmod(GARLIC_random(), j, &i, &iter);
 	iter++;							// asegurar que hay al menos una iteraci�n
+
+	if(arg == 1) iter *= 3;
 
 	for (i = 0; i < iter; i++)		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);

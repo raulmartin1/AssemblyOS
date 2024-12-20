@@ -67,7 +67,6 @@ void inicializarSistema() {
 int main(int argc, char **argv) {
 //------------------------------------------------------------------------------
 	intFunc start;
-	int mtics, v;
 
 	inicializarSistema();
 	
@@ -82,69 +81,59 @@ int main(int argc, char **argv) {
 	start = _gm_cargarPrograma("HOLA");
 	if (start)
 	{	
-		_gp_crearProc(start, 1, "HOLA", 3);
-		_gp_crearProc(start, 2, "HOLA", 3);
+		_gp_crearProc(start, 1, "HOLA", 1);
+		_gp_crearProc(start, 2, "HOLA", 2);
 		_gp_crearProc(start, 3, "HOLA", 3);
-		
-		while (_gd_tickCount < 240)			// esperar 4 segundos
+
+		while (_gd_tickCount < 60)			// esperar 1 segundo
 		{
 			_gp_WaitForVBlank();
-			porcentajeUso();
+			//porcentajeUso();
 		}
-		_gp_matarProc(1);					// matar proceso 1
-		_gg_escribir("Proceso 1 eliminado\n", 0, 0, 0);
+
+		_gg_escribir("**Antes de bloquear procesos**\n", 0, 0, 0);
+		_gg_escribir("Proc cola RDY - BLK: %d - %d\n", _gd_nReady + _gd_nDelay, _gd_nBlock, 0);
+		
+		while (_gd_tickCount < 300)			// esperar 4 segundos
+		{
+			_gp_WaitForVBlank();
+			//porcentajeUso();
+		}
+		_gs_dibujarTabla();
+
+		_gg_escribir("**Despues de bloquear procesos**\n", 0, 0, 0);
+		_gg_escribir("Proc cola RDY - BLK: %d - %d\n", _gd_nReady + _gd_nDelay, _gd_nBlock, 0);
+
+		while (_gd_tickCount < 600)			// esperar 5 segundos
+		{
+			_gp_WaitForVBlank();
+			//porcentajeUso();
+		}
+		_gs_dibujarTabla();
+
+		int temp1 = _gp_signalS(1);
+		int temp2 = _gp_signalS(2);
+		int temp3 = _gp_signalS(3);
+
+		_gg_escribir("**Despues de desbloquear procesos**\n", 0, 0, 0);
+		_gg_escribir("Proc cola RDY - BLK: %d - %d\n", _gd_nReady + _gd_nDelay, _gd_nBlock, 0);
+
+		_gg_escribir("Retorno signalS(1): %d\n", temp1, 0, 0);
+		_gg_escribir("Retorno signalS(2): %d\n", temp2, 0, 0);
+		_gg_escribir("Retorno signalS(3): %d\n", temp3, 0, 0);
+
 		_gs_dibujarTabla();
 		
-		while (_gd_tickCount < 480)			// esperar 4 segundos mas
-		{
-			_gp_WaitForVBlank();
-			porcentajeUso();
-		}
-		_gp_matarProc(3);					// matar proceso 3
-		_gg_escribir("Proceso 3 eliminado\n", 0, 0, 0);
-		_gs_dibujarTabla();
 		
-		while (_gp_numProc() > 1)			// esperar a que proceso 2 acabe
+		while (_gp_numProc() > 1)			// esperar a que acaben los procesos de usuario
 		{
 			_gp_WaitForVBlank();
-			porcentajeUso();
+			//porcentajeUso();
 		}
-		_gg_escribir("Proceso 2 terminado\n", 0, 0, 0);
+		_gg_escribir("Procesos usuario terminados\n", 0, 0, 0);
 	} else
 		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);
 
-
-	_gg_escribir("*** Carga de programa PONG.elf\n", 0, 0, 0);
-	start = _gm_cargarPrograma("PONG");
-	if (start)
-	{
-		for (v = 1; v < 4; v++)	// inicializar buffers de ventanas 1, 2 y 3
-			_gd_wbfs[v].pControl = 0;
-		
-		_gp_crearProc(start, 1, "PONG", 1);
-		_gp_crearProc(start, 2, "PONG", 2);
-		_gp_crearProc(start, 3, "PONG", 3);
-		
-		mtics = _gd_tickCount + 960;
-		while (_gd_tickCount < mtics)		// esperar 16 segundos mas
-		{
-			_gp_WaitForVBlank();
-			porcentajeUso();
-		}
-		
-		_gp_matarProc(1);					// matar los 3 procesos a la vez
-		_gp_matarProc(2);
-		_gp_matarProc(3);
-		_gg_escribir("Procesos 1, 2 y 3 eliminados\n", 0, 0, 0);
-		
-		while (_gp_numProc() > 1)	// esperar a que todos los procesos acaben
-		{
-			_gp_WaitForVBlank();
-			porcentajeUso();
-		}
-		
-	} else
-		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);
 
 
 	_gg_escribir("*** Final fase 2_P\n", 0, 0, 0);

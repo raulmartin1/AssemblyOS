@@ -1013,6 +1013,7 @@ _gp_rsiTIMER0:
 	beq .LnoreadDLY			@; si no los hay, saltarse el bucle
 	ldr r1, =_gd_qDelay		@; cargar direccion de la cola DLY
 	mov r3, #0				@; restablecer indice a 0
+	mov r4, #24				@; inicializar R4 con el tamaño de un PCB
 
 	@; calcular porcentaje de cada proceso y poner su campo workTicks a 0 (cola DLY)
 .LreadDLY:
@@ -1062,6 +1063,7 @@ _gp_rsiTIMER0:
 	mov r2, #8				@; mover un 8 a R2 porque solo hay 8 semaforos
 	ldr r1, =_gd_qBlock		@; cargar direccion de la lista BLK
 	mov r3, #0				@; restablecer indice a 0
+	mov r4, #24				@; inicializar R4 con el tamaño de un PCB
 
 	@; calcular porcentaje de cada proceso y poner su campo workTicks a 0 (cola BLK)
 .LreadBLK:
