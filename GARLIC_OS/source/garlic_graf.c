@@ -85,7 +85,8 @@ void _gg_iniGrafA()
 	vramSetBankA(VRAM_A_MAIN_BG_0x06000000); // reservar el banco de memoria de v�deo A
 	
 	//inicializar los fondos gr�ficos 2 y 3 en modo Extended Rotation, con un tama�o total de 512x512 p�xeles
-	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_512x512, 0, 3);
+	// CAMBIAR CAURTO PARAMETRO A 3 PARA QUE EN VIEW TILES SE VEA BIEN!
+	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_512x512, 0, 4);
 	bg3A = bgInit(3, BgType_ExRotation , BgSize_ER_512x512, 4, 3);
 	
 	MapPtr2A = (int) bgGetMapPtr(bg2A);
@@ -94,13 +95,38 @@ void _gg_iniGrafA()
 	bgSetPriority(bg3A,0);
 	bgSetPriority(bg2A,1);
 	
-	decompress(garlic_fontTiles, bgGetGfxPtr(bg3A) ,LZ77Vram); //descomprimir el contenido de la fuente de letras sobre una zona adecuada de la memoria de v�deo
+	// descomprimim el contenido de la fuente de letras 4 veces
+	// Cada mapa 128 baldoses * 8x8(64) pixels * 1 byte = 8192 bytes
+	// En cada posicion se guarda un halfword = 16 bits = 2 bytes
+	// Cada mapa ocupara 8192 / 2 = 4096 bytes en memoria
+	int base = 4096;
+	int n_paletes = 4;
+	for(int i = 0; i<n_paletes; i++){
+			decompress(garlic_fontTiles, bgGetGfxPtr(bg2A)+ i*base ,LZ77Vram); //descomprimir el contenido de la fuente de letras sobre una zona adecuada de la memoria de v�deo
+	}
+	
+	u16* tilesBase = bgGetGfxPtr(bg2A) + base;	// Direccio base de la paleta de colors, ens saltem la primera paleta que es de color blanc
+	
+	// Cambiamos el valor de los pixeles de las baldosas, a amarillo verde y rojo con los indices de la paleta char_colors[]
+	for(int i=0; i < n_paletes-1; i++){
+		for (int j=0; j < base; j++){
+			if((tilesBase[j] & 0xFF) != 0) { // Si los 8 bits menos significativos no son 0 (contiene datos)
+				tilesBase[j] = tilesBase[j] & 0xFF00; // Se limpian los 8 bits bajos
+				tilesBase[j] = tilesBase[j] | char_colors[i]; // Añadimos el color a los bits bajos
+			}
+			if((tilesBase[j] & 0xFF00) != 0){ // Si los 8 bits mas signfiicativos no son 0
+				tilesBase[j] = tilesBase[j] & 0xFF; // Se limpian los 8 bits altos
+				tilesBase[j] = tilesBase[j] | char_colors[i] <<8; // Añadimos el color a los bits altos
+			}
+		}
+		tilesBase += base;
+	}
+	
 	dmaCopy(garlic_fontPal, BG_PALETTE, sizeof(garlic_fontPal)); //copiar la paleta de colores de la fuente de letras sobre la zona de memoria correspondiente
 	
-	int color=0; //FASE 2
 	//generar los marcos de las ventanas de texto en el fondo 3
 	for(int i=0; i<NVENT; i++) {
-	_gg_generarMarco(i, color);
+		_gg_generarMarco(i, 3);
 	}
 	
 	//escalar los fondos 2 y 3 para que se ajusten exactamente a las dimensiones de una pantalla de la NDS (reducci�n al 50%)
