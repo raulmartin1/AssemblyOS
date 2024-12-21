@@ -41,6 +41,7 @@ void _gg_generarMarco(int v, int color)
 	int ArribaDer=102;
 	int ArribaIzq=103;
 	
+	int color_marco= color*128; // 128 baldosas por paleta de colores
 	//elegimos en que ventana empezar
 	//baseY = (v / PPART) * VFILS
 	//baseX = (v % PPART) * VCOLS
@@ -55,21 +56,21 @@ void _gg_generarMarco(int v, int color)
 	for (int fila=0; fila<VFILS; fila++) { 
 		for (int col=0; col<VCOLS;  col++) {
 			if (fila==0) {	//primera fila
-				if(col==0) mapPtr[col+fila*PCOLS]=ArribaIzq; //esquina superior izquierda
+				if(col==0) mapPtr[col+fila*PCOLS]=ArribaIzq + color_marco; //esquina superior izquierda
 				else {
-					if(col==VCOLS-1) mapPtr[col+fila*PCOLS]=ArribaDer; //esquina superior derecha
-					else mapPtr[col+fila*PCOLS]=HArriba; //linea superior horizontal
+					if(col==VCOLS-1) mapPtr[col+fila*PCOLS]=ArribaDer + color_marco; //esquina superior derecha
+					else mapPtr[col+fila*PCOLS]=HArriba + color_marco; //linea superior horizontal
 				}
 			}
 			else if(fila!=VFILS-1){	//Filas intermedias
-				if(col==0) mapPtr[col+fila*PCOLS]=VIzq; //vertical izquierda
-				else if(col==VCOLS-1) mapPtr[col+fila*PCOLS]=VDer; //vertical derecho
+				if(col==0) mapPtr[col+fila*PCOLS]=VIzq + color_marco; //vertical izquierda
+				else if(col==VCOLS-1) mapPtr[col+fila*PCOLS]=VDer + color_marco; //vertical derecho
 			}
 			else { //Ultima fila (VFILS-1)
-				if(col==0) mapPtr[col+fila*PCOLS]= AbajoIzq; //esquina inferior izquierda
+				if(col==0) mapPtr[col+fila*PCOLS]= AbajoIzq + color_marco; //esquina inferior izquierda
 				else {
-					if(col==VCOLS-1) mapPtr[col+fila*PCOLS]=AbajoDer; //esquina inferior derecha
-					else mapPtr[col+fila*PCOLS]=HAbajo; //linea inferior horizontal
+					if(col==VCOLS-1) mapPtr[col+fila*PCOLS]=AbajoDer + color_marco; //esquina inferior derecha
+					else mapPtr[col+fila*PCOLS]=HAbajo + color_marco; //linea inferior horizontal
 				}
 			}	
 		}
@@ -85,7 +86,7 @@ void _gg_iniGrafA()
 	vramSetBankA(VRAM_A_MAIN_BG_0x06000000); // reservar el banco de memoria de v�deo A
 	
 	//inicializar los fondos gr�ficos 2 y 3 en modo Extended Rotation, con un tama�o total de 512x512 p�xeles
-	// CAMBIAR CAURTO PARAMETRO A 3 PARA QUE EN VIEW TILES SE VEA BIEN!
+	// !!!!!!!!!!CAMBIAR CAURTO PARAMETRO A 3 PARA QUE EN VIEW TILES SE VEA BIEN!
 	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_512x512, 0, 4);
 	bg3A = bgInit(3, BgType_ExRotation , BgSize_ER_512x512, 4, 3);
 	
