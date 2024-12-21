@@ -20,7 +20,8 @@
 #define PCOLS	VCOLS * PPART	// n�mero de columnas totales (en pantalla)
 #define PFILS	VFILS * PPART	// n�mero de filas totales (en pantalla)
 
-#define LOWER_16_BITS_MASK 0xFFFF // Mascara para obtener los 16 bits bajos de pControl
+#define MASK_12_BITS 0xFFF0000 // Mascara para obtener los 16 bits bajos de pControl
+#define MASK_16_BITS 0xFFFF
 #define TEXT_LIMIT (VCOLS*3)		// Limite de texto para el metodo _gg_escribir
 
 int bg2A, bg3A;
@@ -220,9 +221,9 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 		}
 		
 		else if(formato[index] == '%' || vTranscrits == 2){ // si es un % literal
-			resultado[i] = '%';
-		
-			if(vTranscrits == 2) {	//no quedan valors a transcriure
+			if(formato[index] == '%') resultado[i] = '%';
+			else if(vTranscrits == 2) {	//no quedan valors a transcriure
+			resultado[i]='%';
 			i++;
 			resultado[i] = formato[index];	//coloquem el caracter literal
 			}
@@ -275,18 +276,31 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 {
 	char resultado[TEXT_LIMIT]=""; //mensaje resultante,32 caracterees por linea, 3 lineas de texto (limitamos a 3 lineas  de texto)
 	_gg_procesarFormato(formato, val1, val2, resultado);
-	
-	// 16 bits altos del pControl: n�mero de l�nea (0..23)
-	// 16 bits bajos del pControl: caracteres pendientes(0..32)
+	//		4 bits altos: c�digo de color actual (0..3)
+	//		12 bits medios: n�mero de l�nea (0..23)
+	//		16 bits bajos: car�cteres pendientes (0..32)
+	int color = _gd_wbfs[ventana].pControl >> 28;	// 4 bits mas significativos (del 28 al 31 se desplazan a la derecha del todo, eliminando todo lo demas)
 	//numero de caracteres de la ventana actual
-	//obtenemos los 16 bits bajos de pControl
-	int nChars = _gd_wbfs[ventana].pControl & LOWER_16_BITS_MASK; //AND->Si los dos bits son 1 los pone a 1
-	int filaActual = _gd_wbfs[ventana].pControl >> 16; //Desplazamos 16 bits a la derecha, borrando asi los 16 menos significativos
-	//Ahora los mas bajos ser�n los que antes eran los 16 altos, filaActual=16 bits mas altos de pControl
+	int nChars = (_gd_wbfs[ventana].pControl & MASK_12_BITS) >> 16; // Mascara con los bits 27-16, y los desplazamos 16 posiciones para colocarlos en los 16 meno significativos
+	int filaActual = _gd_wbfs[ventana].pControl & MASK_16_BITS; // Seleccionamos los 16 bits menos significativos 
+	//Ahora los mas bajos ser�n los que antes eran los 16 altos, filaActual=16 bits mas altos de pControl 
 	int i=0; 
 	
 	char car = resultado[i];	//caracter actual
 	while(car != '\0'){
+		
+		if(car == '%'){
+			int index_color = resultado[i+1];
+			if(index_color >= '0' && index_color <= '3'){ // 48->0 i 51->3 en ASCII
+				if(index_color == '0') color = 0;
+				else if(index_color == '1') color = 1;
+				else if(index_color == '2') color = 2;
+				else if(index_color == '3') color = 3;
+				
+				i += 2; // ignorar el % y el indice de color
+				car= resultado[i];
+			}
+		}
 		if(car == '\t'){
 			int espaciosRestantes = 4 - (nChars % 4); //Calculo de espacios que faltan
 			while(espaciosRestantes > 0 && nChars < VCOLS) {
@@ -345,7 +359,7 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 			i=i+3;
 		}
 		else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> a�adir caracter al buffer de la ventana
-			_gd_wbfs[ventana].pChars[nChars] = car; //se a�ade el caracter
+			_gd_wbfs[ventana].pChars[nChars] = car + (color * 128); //se a�ade el caracter con el color
 			nChars++;
 		}
 		
@@ -353,9 +367,10 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		car=resultado[i];
 		
 		}
-		_gd_wbfs[ventana].pControl = (filaActual << 16); //coloquem el num de la fila actual als 16 primers bits(bits alts) de pControl
-		_gd_wbfs[ventana].pControl += nChars; //coloca el numero de caracteres escrits en els 16 ultims bits(bits baixos	
 		
+		_gd_wbfs[ventana].pControl = (color << 28); //coloquem el color als 4 bits alts (del 28 al 31)
+		_gd_wbfs[ventana].pControl += (filaActual << 16); //coloquem el num de la fila actual als 12 bits medios(16 al 27) de pControl
+		_gd_wbfs[ventana].pControl += nChars; //coloca el numero de caracteres escrits en els 16 bits baixos	
 }
 
 void _gg_setChar(unsigned char n, unsigned char *buffer) {
