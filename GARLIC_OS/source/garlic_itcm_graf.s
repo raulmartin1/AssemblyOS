@@ -1,21 +1,22 @@
 @;==============================================================================
 @;
-@;	"garlic_itcm_graf.s":	c�digo de rutinas de soporte a la gesti�n de
-@;							ventanas gr�ficas (versi�n 1.0)
+@;	"garlic_itcm_graf.s":	código de rutinas de soporte a la gestión de
+@;							ventanas gráficas (versión 2.0)
 @;
 @;==============================================================================
 
-NVENT	= 4					@; n�mero de ventanas totales
-PPART	= 2					@; n�mero de ventanas horizontales
+NVENT	= 16				@; número de ventanas totales
+PPART	= 4					@; número de ventanas horizontales
 							@; (particiones de pantalla)
-L2_PPART = 1				@; log base 2 de PPART
+L2_PPART = 2				@; log base 2 de PPART
 
 VCOLS	= 32				@; columnas y filas de cualquier ventana
 VFILS	= 24
-PCOLS	= VCOLS * PPART		@; n�mero de columnas totales (en pantalla)
-PFILS	= VFILS * PPART		@; n�mero de filas totales (en pantalla)
+PCOLS	= VCOLS * PPART		@; número de columnas totales (en pantalla)
+PFILS	= VFILS * PPART		@; número de filas totales (en pantalla)
 
-WBUFS_LEN = 36				@; longitud de cada buffer de ventana (32+4)
+WBUFS_LEN = 68				@; longitud de cada buffer de ventana (64+4)
+
 
 .section .itcm,"ax",%progbits
 
@@ -24,12 +25,12 @@ WBUFS_LEN = 36				@; longitud de cada buffer de ventana (32+4)
 
 
 	.global _gg_escribirLinea
-	@; Rutina para escribir toda una l�nea de caracteres almacenada en el
+	@; Rutina para escribir toda una l�nea de caracteres almacenada en el
 	@; buffer de la ventana especificada;
-	@;Par�metros:
+	@;Par�metros:
 	@;	R0: ventana a actualizar (int v)
 	@;	R1: fila actual (int f)
-	@;	R2: n�mero de caracteres a escribir (int n)
+	@;	R2: n�mero de caracteres a escribir (int n)
 _gg_escribirLinea:
 	push {r3- r12, lr}
 		@; Calculo de la posicion inicial de columna de la ventana
@@ -61,7 +62,7 @@ _gg_escribirLinea:
 		add r6, r6, r5			@; direccion base mapa + desplazamiento = direccion donde se escribe
 		
 		@; vector de ventanas
-		mov r8, #WBUFS_LEN		@; tama�o ventana en memoria (en bytes)
+		mov r8, #WBUFS_LEN		@; tama�o ventana en memoria (en bytes)
 		ldr r4, =_gd_wbfs		@; cargamos direccion de inicio del vector de ventanas
 		mul r9, r0, r8			@; v * WBUFS_LEN = desplazamiento inicio de la ventana en _gd_wbfs 
 		add r4, r4, r9			@; desplazamiento para la posicion de la ventana en el vector
@@ -88,9 +89,9 @@ _gg_escribirLinea:
 
 
 	.global _gg_desplazar
-	@; Rutina para desplazar una posici�n hacia arriba todas las filas de la
-	@; ventana (v) y borrar el contenido de la �ltima fila;
-	@;Par�metros:
+	@; Rutina para desplazar una posici�n hacia arriba todas las filas de la
+	@; ventana (v) y borrar el contenido de la �ltima fila;
+	@;Par�metros:
 	@;	R0: ventana a desplazar (int v)
 _gg_desplazar:
 	push {r1-r12, lr}
@@ -158,6 +159,64 @@ _gg_desplazar:
 			blo .Lespacios		@; mientras no se acabe la fila seguir poniendo espacios
 			
 	pop {r1-r12, pc}
+
+	.global _gg_escribirLineaTabla
+	@; escribe los campos básicos de una linea de la tabla correspondiente al
+	@; zócalo indicado por parámetro con el color especificado; los campos
+	@; son: número de zócalo, PID, keyName y dirección inicial
+	@;Parámetros:
+	@;	R0 (z)		->	número de zócalo
+	@;	R1 (color)	->	número de color (0..3)
+_gg_escribirLineaTabla:
+	push {lr}
+
+
+	pop {pc}
+
+
+
+	.global _gg_escribirCar
+	@; escribe un carácter (baldosa) en la posición de la ventana indicada,
+	@; con un color concreto;
+	@;Parámetros:
+	@;	R0 (vx)		->	coordenada x de ventana (0..31)
+	@;	R1 (vy)		->	coordenada y de ventana (0..23)
+	@;	R2 (car)	->	código del carácter, como número de baldosa (0..127)
+	@;	R3 (color)	->	número de color del texto (0..3)
+	@; pila (vent)	->	número de ventana (0..15)
+_gg_escribirCar:
+	push {lr}
+	
+
+	pop {pc}
+
+
+
+	.global _gg_escribirMat
+	@; escribe una matriz de 8x8 carácteres a partir de una posición de la
+	@; ventana indicada, con un color concreto;
+	@;Parámetros:
+	@;	R0 (vx)		->	coordenada x inicial de ventana (0..31)
+	@;	R1 (vy)		->	coordenada y inicial de ventana (0..23)
+	@;	R2 (m)		->	puntero a matriz 8x8 de códigos ASCII (dirección)
+	@;	R3 (color)	->	número de color del texto (0..3)
+	@; pila	(vent)	->	número de ventana (0..15)
+_gg_escribirMat:
+	push {lr}
+	
+
+	pop {pc}
+
+
+
+	.global _gg_rsiTIMER2
+	@; Rutina de Servicio de Interrupción (RSI) para actualizar la representa-
+	@; ción del PC actual.
+_gg_rsiTIMER2:
+	push {lr}
+
+
+	pop {pc}
 
 
 .end

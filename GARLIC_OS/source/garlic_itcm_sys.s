@@ -1,7 +1,7 @@
 @;==============================================================================
 @;
-@;	"garlic_itcm_sys.s":	codigo de las rutinas de soporte al sistema 2.0
-@;						(ver "garlic_system.h" para descripcion de rutinas)
+@;	"garlic_itcm_sys.s":	c�digo de las rutinas de soporte al sistema 2.0
+@;						(ver "garlic_system.h" para descripci�n de rutinas)
 @;
 @;==============================================================================
 

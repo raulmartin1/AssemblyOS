@@ -1,8 +1,8 @@
 /*------------------------------------------------------------------------------
 
-	"garlic_graf.c" : fase 1 / programador G
+	"garlic_graf.c" : fase 2 / programador G
 
-	Funciones de gesti�n del entorno gr�fico (ventanas de texto), para GARLIC 1.0
+	Funciones de gesti�n de las ventanas de texto (gr�ficos), para GARLIC 2.0
 
 ------------------------------------------------------------------------------*/
 #include <nds.h>
@@ -12,8 +12,8 @@
 
 /* definiciones para realizar c�lculos relativos a la posici�n de los caracteres
 	dentro de las ventanas gr�ficas, que pueden ser 4 o 16 */
-#define NVENT	4				// n�mero de ventanas totales
-#define PPART	2				// n�mero de ventanas horizontales o verticales
+#define NVENT	16				// n�mero de ventanas totales
+#define PPART	4				// n�mero de ventanas horizontales
 								// (particiones de pantalla)
 #define VCOLS	32				// columnas y filas de cualquier ventana
 #define VFILS	24
@@ -25,8 +25,11 @@
 
 int bg2A, bg3A;
 int MapPtr2A;
+const unsigned int char_colors[] = {240, 96, 64};	// amarillo, verde, rojo
 
-/* _gg_generarMarco: dibuja el marco de la ventana que se indica por par�metro*/
+
+/* _gg_generarMarco: dibuja el marco de la ventana que se indica por par�metro,
+												con el color correspondiente */
 void _gg_generarMarco(int v, int color)
 {	
 	int VIzq=96;
@@ -75,7 +78,7 @@ void _gg_generarMarco(int v, int color)
 }
 
 
-/* _gg_iniGraf: inicializa el procesador gr�fico A para GARLIC 1.0 */
+/* _gg_iniGraf: inicializa el procesador gr�fico A para GARLIC 2.0 */
 void _gg_iniGrafA()
 {
 	videoSetMode(MODE_5_2D); // inicializar el procesador gr�fico principal (A) en modo 5, con salida en la pantalla superior de la NDS
@@ -229,16 +232,17 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 }
 /* _gg_escribir: escribe una cadena de caracteres en la ventana indicada;
 	Par�metros:
-		formato	->	string de formato:
+		formato	->	cadena de formato, terminada con centinela '\0';
 					admite '\n' (salto de l�nea), '\t' (tabulador, 4 espacios)
 					y c�digos entre 32 y 159 (los 32 �ltimos son caracteres
-					gr�ficos), adem�s de marcas de format %c, %d, %h y %s (m�x.
-					2 marcas por string)
+					gr�ficos), adem�s de marcas de format %c, %d, %h y %s (max.
+					2 marcas por cadena) y de las marcas de cambio de color 
+					actual %0 (blanco), %1 (amarillo), %2 (verde) y %3 (rojo)
 		val1	->	valor a sustituir en la primera marca de formato, si existe
 		val2	->	valor a sustituir en la segunda marca de formato, si existe
 					- los valores pueden ser un c�digo ASCII (%c), un valor
 					  natural de 32 bits (%d, %x) o un puntero a string (%s)
-		ventana	->	n�mero de ventana (0..3)
+		ventana	->	n�mero de ventana (de 0 a 3)
 */
 void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int ventana)
 {

@@ -223,9 +223,7 @@ extern intFunc _gm_cargarPrograma(char *keyName);
 					y seg�n el valor de las direcciones de las referencias a
 					reubicar y de las direcciones de inicio de los segmentos de
 					c�digo (pAddr_code) y datos (pAddr_data); */
-extern void _gm_reubicar(char *fileBuf,
-							unsigned int pAddr_code, unsigned int *dest_code,
-							unsigned int pAddr_data, unsigned int *dest_data);
+extern void _gm_reubicar(char *fileBuf, unsigned int pAddr, unsigned int *dest);
 
 
 /* _gm_reservarMem: rutina para reservar un conjunto de franjas de memoria 
