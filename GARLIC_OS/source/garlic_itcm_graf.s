@@ -34,12 +34,14 @@ WBUFS_LEN = 68				@; longitud de cada buffer de ventana (64+4)
 _gg_escribirLinea:
 	push {r3- r12, lr}
 		@; Calculo de la posicion inicial de columna de la ventana
-		and r3, r0, #L2_PPART	@; r3 = v % PPART
+		mov r5, #PPART
+		sub r5, #1				@; mascara 3(0011)extrae los 2 ultimos bits
+		and r3, r0, r5			@; r3 = v % PPART -> ventana % 4
 		mov r4, #VCOLS
 		mul r5, r3, r4			@; r5 = (v%PPART) * VCOLS
 		mov r3, r5				@; r3 = (v%PPART) * VCOLS
 		@; Calculo de la posicion inicial de fila de la ventana
-		lsr r4, r0, #L2_PPART	@; r4 = v / PPART
+		lsr r4, r0, #L2_PPART	@; r4 = v / L2_PPART
 		mov r5, #VFILS
 		mul r6, r4, r5			@; r6 = (v/PPART) * VFILS
 		mov r4, r6				@; r4 = (v/PPART) * VFILS
@@ -70,7 +72,7 @@ _gg_escribirLinea:
 		
 		mov r10, #0				@; nChars=0
 		.LescribirChar:
-			ldrb r9, [r4, r10]	@; r9=_gd_wbfs[ventana].pChars[nChars]
+			ldrh r9, [r4, r10]	@; r9=_gd_wbfs[ventana].pChars[nChars] ahora son los 16 bits bajos (halfwords)
 			cmp r9 , #128		@; Comprobar si es un caracter personalizado (no hace falta ajustar el valor)
 			bhs .LsetChar
 			sub r9, r9, #32		@; valor ASCII -> codigo baldosa, las baldosas empiezan en 0 y los ASCII en 32 al 127
@@ -95,14 +97,15 @@ _gg_escribirLinea:
 	@;	R0: ventana a desplazar (int v)
 _gg_desplazar:
 	push {r1-r12, lr}
-		@; Igual que en el _gg_escribirLinea
 		@; Calculo de la posicion inicial de columna de la ventana
-		and r3, r0, #L2_PPART	@; r3 = v % PPART
+		mov r5, #PPART
+		sub r5, #1
+		and r3, r0, r5			@; r3 = v % PPART -> ventana % 4
 		mov r4, #VCOLS
 		mul r5, r3, r4			@; r5 = (v%PPART) * VCOLS
 		mov r3, r5				@; r3 = (v%PPART) * VCOLS
 		@; Calculo de la posicion inicial de fila de la ventana
-		lsr r4, r0, #L2_PPART	@; r4 = v / PPART
+		lsr r4, r0, #L2_PPART	@; r4 = v / L2_PPART
 		mov r5, #VFILS
 		mul r6, r4, r5			@; r6 = (v/PPART) * VFILS
 		mov r4, r6				@; r4 = (v/PPART) * VFILS
@@ -186,8 +189,29 @@ _gg_escribirLineaTabla:
 	@; pila (vent)	->	número de ventana (0..15)
 _gg_escribirCar:
 	push {lr}
+		ldr r4, [sp, #24]	@; Accedemos al valor 24 bytes a partir de la pila sp ( 5 regs * 4 bytes + 4 bytes de este quinto registro) = 24 bytes
+				@; Calculo de la posicion inicial de columna de la ventana
+		and r3, r4, #PPART-1	@; r3 = v % (3)PPART-1
+		
+		mov r4, #VCOLS
+		mul r5, r3, r4			@; r5 = (v%PPART) * VCOLS
+		mov r3, r5				@; r3 = (v%PPART) * VCOLS
+		@; Calculo de la posicion inicial de fila de la ventana
+		lsr r4, r0, #L2_PPART	@; r4 = v / PPART
+		mov r5, #VFILS
+		mul r6, r4, r5			@; r6 = (v/PPART) * VFILS
+		mov r4, r6				@; r4 = (v/PPART) * VFILS
+		
+		@; Calculo desplazamiento total mapPtr = ((v/PPART) * VFILS) * PCOLS + ((v%PPART) * VCOLS) + (f * VCOLS)
+		mov r6 ,#PCOLS 
+		mul r8, r4, r6			@; r8 = ((v/PPART) * VFILS) * PCOLS
+		add r7, r8, r3			@; r7 = (((v/PPART) * VFILS) * PCOLS) + ((v%PPART) * VCOLS)
+		mov r5, r7
+		@; r5= desplazamiento total
+		@; adaptamos el desplazamiento a bytes (cada baldosa ocupa 2bytes en memoria) 
+		lsl r5, r5, #1			@; desplazamos el valor de r5 una pos a la izquierda(multiplicar por 2)
+		
 	
-
 	pop {pc}
 
 

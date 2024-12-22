@@ -87,7 +87,7 @@ void _gg_iniGrafA()
 	vramSetBankA(VRAM_A_MAIN_BG_0x06000000); // reservar el banco de memoria de v�deo A
 	
 	//inicializar los fondos gr�ficos 2 y 3 en modo Extended Rotation, con un tama�o total de 512x512 p�xeles
-	// !!!!!!!!!!CAMBIAR CAURTO PARAMETRO A 3 PARA QUE EN VIEW TILES SE VEA BIEN!
+	// !!!!!!!!!!CAMBIAR CUARTO PARAMETRO A 3 PARA QUE EN VIEW TILES SE VEA BIEN!
 	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_512x512, 0, 4);
 	bg3A = bgInit(3, BgType_ExRotation , BgSize_ER_512x512, 4, 3);
 	
