@@ -188,31 +188,40 @@ _gg_escribirLineaTabla:
 	@;	R3 (color)	->	número de color del texto (0..3)
 	@; pila (vent)	->	número de ventana (0..15)
 _gg_escribirCar:
-	push {lr}
+	push {r4-r9, lr}
 		ldr r4, [sp, #24]	@; Accedemos al valor 24 bytes a partir de la pila sp ( 5 regs * 4 bytes + 4 bytes de este quinto registro) = 24 bytes
-				@; Calculo de la posicion inicial de columna de la ventana
-		and r3, r4, #PPART-1	@; r3 = v % (3)PPART-1
-		
-		mov r4, #VCOLS
-		mul r5, r3, r4			@; r5 = (v%PPART) * VCOLS
+		@; Calculo de la posicion inicial de columna de la ventana
+		mov r5, #PPART
+		sub r5, #1
+		and r3, r4, r5			@; r3 = v % PPART -> ventana % 4
+		mov r9, #VCOLS
+		mul r5, r3, r9			@; r5 = (v%PPART) * VCOLS
 		mov r3, r5				@; r3 = (v%PPART) * VCOLS
 		@; Calculo de la posicion inicial de fila de la ventana
-		lsr r4, r0, #L2_PPART	@; r4 = v / PPART
+		lsr r6, r0, #L2_PPART	@; r4 = v / PPART
 		mov r5, #VFILS
-		mul r6, r4, r5			@; r6 = (v/PPART) * VFILS
-		mov r4, r6				@; r4 = (v/PPART) * VFILS
+		mul r7, r6, r5			@; r7 = (v/PPART) * VFILS
+		
 		
 		@; Calculo desplazamiento total mapPtr = ((v/PPART) * VFILS) * PCOLS + ((v%PPART) * VCOLS) + (f * VCOLS)
 		mov r6 ,#PCOLS 
-		mul r8, r4, r6			@; r8 = ((v/PPART) * VFILS) * PCOLS
-		add r7, r8, r3			@; r7 = (((v/PPART) * VFILS) * PCOLS) + ((v%PPART) * VCOLS)
-		mov r5, r7
+		mul r8, r7, r6			@; r8 = ((v/PPART) * VFILS) * PCOLS
+		add r8, r3				@; r7 = (((v/PPART) * VFILS) * PCOLS) + ((v%PPART) * VCOLS)
+		mov r5, r8
 		@; r5= desplazamiento total
 		@; adaptamos el desplazamiento a bytes (cada baldosa ocupa 2bytes en memoria) 
 		lsl r5, r5, #1			@; desplazamos el valor de r5 una pos a la izquierda(multiplicar por 2)
 		
-	
-	pop {pc}
+		ldr r6, =MapPtr2A
+		ldr r6, [r6]
+		add r6, r6, r5
+		
+		@; 2^7=128 baldosas por cada paleta de colores
+		mov r5, r3, lsl #7		@; r5 = color * 128
+		add r5, r2				@; r5 = caracter + color*128
+		strh r5, [r6]
+		
+	pop {r4-r9, pc}
 
 
 
