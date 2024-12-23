@@ -298,7 +298,7 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 				else if(index_color == '3') color = 3;
 				
 				i += 2; // ignorar el % y el indice de color
-				car= resultado[i];
+				//car= resultado[i];
 			}
 		}
 		if(car == '\t'){
@@ -310,23 +310,10 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		}
 		
 		}
-		/*
+		
 		else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> a�adir caracter al buffer de la ventana
-			_gd_wbfs[ventana].pChars[nChars] = car; //se a�ade el caracter
+			_gd_wbfs[ventana].pChars[nChars] = car + (color*128); //se a�ade el caracter
 			nChars++;
-		}
-		*/
-		else if(car == '\n' || nChars == VCOLS) {
-			/* _gp_WaitForVBlank: sustituto de swiWaitForVBlank() para Garlic; */
-			_gp_WaitForVBlank();
-			
-			if(filaActual==VFILS) {
-				_gg_desplazar(ventana); //despla�ament dels codi de rajola (scroll)
-				filaActual--;
-			}
-			_gg_escribirLinea(ventana, filaActual, nChars); //transfereix del buffer al mapa de rajoles 
-			filaActual++;	//siguiente fila
-			nChars=0;		//preparamos el numero de caracteres a 0 para la nueva fila
 		}
 		else if(car == '\\' && resultado[i+1]=='x') {
 			unsigned char simbol;
@@ -358,9 +345,17 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 			}
 			i=i+3;
 		}
-		else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> a�adir caracter al buffer de la ventana
-			_gd_wbfs[ventana].pChars[nChars] = car + (color * 128); //se a�ade el caracter con el color
-			nChars++;
+		if(car == '\n' || nChars == VCOLS) {
+			/* _gp_WaitForVBlank: sustituto de swiWaitForVBlank() para Garlic; */
+			_gp_WaitForVBlank();
+			
+			if(filaActual==VFILS) {
+				_gg_desplazar(ventana); //despla�ament dels codi de rajola (scroll)
+				filaActual--;
+			}
+			_gg_escribirLinea(ventana, filaActual, nChars); //transfereix del buffer al mapa de rajoles 
+			filaActual++;	//siguiente fila
+			nChars=0;		//preparamos el numero de caracteres a 0 para la nueva fila
 		}
 		
 		i++;

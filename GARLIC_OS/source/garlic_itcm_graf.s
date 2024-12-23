@@ -84,7 +84,7 @@ _gg_escribirLinea:
 			
 			.LsaltarSetChar:
 			add r6, r6, #2		@; avanzamos siguiente posicion del mapa (2 bytes pro baldosa)
-			add r10, r10, #1	@; nChars++
+			add r10, r10, #2	@; nChars++
 			cmp r10, r2 		@; mientras nChars < num total de caracteres a escribir
 		blo .LescribirChar
 	pop {r3-r12, pc}
