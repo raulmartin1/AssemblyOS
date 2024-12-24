@@ -84,11 +84,10 @@ void _gg_iniGrafA()
 {
 	videoSetMode(MODE_5_2D); // inicializar el procesador gr�fico principal (A) en modo 5, con salida en la pantalla superior de la NDS
 	vramSetBankA(VRAM_A_MAIN_BG_0x06000000); // reservar el banco de memoria de v�deo A
-	
-	//inicializar los fondos gr�ficos 2 y 3 en modo Extended Rotation, con un tama�o total de 512x512 p�xeles
-	// !!!!!!!!!!CAMBIAR CUARTO PARAMETRO A 3 PARA QUE EN VIEW TILES SE VEA BIEN!
-	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_512x512, 0, 4);
-	bg3A = bgInit(3, BgType_ExRotation , BgSize_ER_512x512, 4, 3);
+
+	//inicializar los fondos gr�ficos 2 y 3 en modo Extended Rotation, con un tama�o total de 1024x1024 p�xeles
+	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_1024x1024, 0, 4);
+	bg3A = bgInit(3, BgType_ExRotation , BgSize_ER_1024x1024, 16, 4);
 	
 	MapPtr2A = (int) bgGetMapPtr(bg2A);
 	
@@ -371,8 +370,8 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 void _gg_setChar(unsigned char n, unsigned char *buffer) {
 	if(n>=128 && n<=255){
 		int base = 0x06000000; 				
-		//16KB * 3 = 48 KB -> 48*1024= 49152-> 0xC000
-		base=base+0xC000;				//base donde acaban los 127 caracteres predeterminados
+		//16KB * 4(tile_base) = 64 KB -> 64*1024= 65536-> 0x10000
+		base=base+0x10000;				//base donde acaban los 127 caracteres predeterminados
 		int desplazamiento = base+(n*64); //64 bytes que ocupa un baldosa completa 8x8
 		dmaCopy(buffer, (u16*)desplazamiento, 64); //copiamos la baldosa en la posicion de la memoria
 		bgUpdate();

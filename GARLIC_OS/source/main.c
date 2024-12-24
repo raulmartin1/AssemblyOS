@@ -10,7 +10,8 @@
 
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
-unsigned char baldosa[64];const short divFreq2 = -33513982/(1024*4);	// frecuencia de TIMER2 = 4 Hz
+unsigned char baldosa[64];
+const short divFreq2 = -33513982/(1024*4);	// frecuencia de TIMER2 = 4 Hz
 
 const char *argumentosDisponibles[4] = { "0", "1", "2", "3"};
 		// se supone que estos programas est�n disponibles en el directorio
@@ -172,7 +173,34 @@ void inicializarSistema() {
 	REG_IME = IME_ENABLE;			// activar las interrupciones en general
 }
 
+void crearCara(){
+	/* Crear baldosa Cara */
+	for (int i = 0; i < 64; i++) {
+        baldosa[i] = 0xFF; // Establecer todo a blanco
+    }
 
+    // Ojos (pintar de negro)
+    baldosa[9] = 0x00;
+    baldosa[10] = 0x00; 
+
+    baldosa[13] = 0x00; 
+    baldosa[14] = 0x00; 
+	
+	baldosa[17] = 0x00;
+    baldosa[18] = 0x00; 
+
+    baldosa[21] = 0x00; 
+    baldosa[22] = 0x00; 
+	
+	baldosa[41] = 0x00; 
+    baldosa[46] = 0x00;
+	baldosa[50] = 0x00; 
+    baldosa[51] = 0x00;
+	baldosa[52] = 0x00; 
+    baldosa[53] = 0x00;
+	
+	_gg_setChar(128, baldosa);
+}
 
 //------------------------------------------------------------------------------
 int main(int argc, char **argv) {
@@ -180,14 +208,14 @@ int main(int argc, char **argv) {
 	int key;
 
 	inicializarSistema();
-	
+	crearCara();
 	_gg_escribir("%1********************************", 0, 0, 0);
 	_gg_escribir("%1*                              *", 0, 0, 0);
-	_gg_escribir("%1* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
+	_gg_escribir("%1* \x80Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
 	_gg_escribir("%1*                              *", 0, 0, 0);
 	_gg_escribir("%1********************************", 0, 0, 0);
 	_gg_escribir("%1*** Inicio fase 2 / ProgG\n", 0, 0, 0);
-
+	
 	while (1)						// bucle infinito
 	{
 		scanKeys();
