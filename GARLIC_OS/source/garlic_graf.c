@@ -28,7 +28,6 @@ int bg2A, bg3A;
 int MapPtr2A;
 const unsigned int char_colors[] = {240, 96, 64};	// amarillo, verde, rojo
 
-
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por par�metro,
 												con el color correspondiente */
 void _gg_generarMarco(int v, int color)
@@ -258,6 +257,7 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 	
 	resultado[i] = '\0'; //final del string
 }
+
 /* _gg_escribir: escribe una cadena de caracteres en la ventana indicada;
 	Par�metros:
 		formato	->	cadena de formato, terminada con centinela '\0';

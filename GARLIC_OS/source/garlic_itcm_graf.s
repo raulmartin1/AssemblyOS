@@ -70,6 +70,7 @@ _gg_escribirLinea:
 		add r4, r4, r9			@; desplazamiento para la posicion de la ventana en el vector
 		add r4, r4, #4			@; saltamos 4 bytes = 16bits (de pControl) y ubicarnos en pChars
 		
+		lsl r2, #1				@; se multiplica por 2, ahora son halfwords
 		mov r10, #0				@; nChars=0
 		.LescribirChar:
 			ldrh r9, [r4, r10]	@; r9=_gd_wbfs[ventana].pChars[nChars] ahora son los 16 bits bajos (halfwords)
@@ -171,10 +172,15 @@ _gg_desplazar:
 	@;	R0 (z)		->	número de zócalo
 	@;	R1 (color)	->	número de color (0..3)
 _gg_escribirLineaTabla:
-	push {lr}
+	push {r0-r6, lr}
+		ldr r2, =_gd_pcbs		@; direccion basde de los PCBs
 
-
-	pop {pc}
+		mov r4, #24				@; cada PCB ocupa 24 bytes (6 variables * 4 bytes cada una, ya que son int)
+		mul r5, r0, r4			@; r5 = zocalo*24
+		add r2, r5				@; PCB actual
+		
+		
+	pop {r0-r6, pc}
 
 
 
