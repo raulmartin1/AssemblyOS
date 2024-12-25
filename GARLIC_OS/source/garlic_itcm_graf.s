@@ -172,15 +172,58 @@ _gg_desplazar:
 	@;	R0 (z)		->	número de zócalo
 	@;	R1 (color)	->	número de color (0..3)
 _gg_escribirLineaTabla:
-	push {r0-r6, lr}
+	push {r0-r7, lr}
+		mov r7, r0
+		mov r3, r1
+		
 		ldr r2, =_gd_pcbs		@; direccion basde de los PCBs
-
+		
 		mov r4, #24				@; cada PCB ocupa 24 bytes (6 variables * 4 bytes cada una, ya que son int)
 		mul r5, r0, r4			@; r5 = zocalo*24
-		add r2, r5				@; PCB actual
+		add r4, r2, r5
 		
+		add r6, r0, #4				@; fila donde escribimos
+		@; Comprovar si se trata del PID 0 -> Del Sistema Operativo
+		ldr r5, [r4, #0]		@; cargar primer parametro del pcb-> PID
+		cmp r5, #0
+		bne .LescribirCampos	@; Si es el proceso del SO
+		cmp r0, #0				@; Mirar si es el zocalo 0
+		beq .LescribirCampos
 		
-	pop {r0-r6, pc}
+		@; PID es 0 y Zocalo es diferente de 0-> Proceso acabado, hay que borrar la informacion
+		ldr r0, =limpiar		@; Se carga espacios para pasarlo como primer parametro del _gs_escribirStringSub
+		add r1, r0, #4			@; Saltamos las primeras 4 filas PID
+		mov r2, #4				@; Columna 4 -> PID
+		bl _gs_escribirStringSub
+		mov r2, #9				@; Columna 9 -> Keyname
+		bl _gs_escribirStringSub
+		b .LescribirZocalo
+		
+		.LescribirCampos:
+			ldr r0, =string		@; cargamos string para guardar el PID
+			mov r1, #4			@; longitud maxima del valor convertido
+			ldr r2, [r4, #0]	@; cargamos el PID
+			bl _gs_num2str_dec	@; convertir num natural de 32 bits a su representacion en decimal en el string acabado en \0
+			ldr r0, =string
+			mov r1, r6			@; fila del PID
+			bl _gs_escribirStringSub
+			
+			add r0, r4, #16		@; posicion keyname (4parametros*4bytes =16)
+			mov r1, r6			@; ir a la fila del zocalo indicado
+			mov r2, #9			@; Columna del keyname
+			bl _gs_escribirStringSub
+			
+		.LescribirZocalo:
+			ldr r0, =string
+			mov r1, #3			@; Zocalo maximo son 2 valores(16) + '\0'
+			mov r2, r7			@; indicamos zocalo
+			bl _gs_num2str_dec
+			ldr r0, =string
+			mov r1, r6			@; fila
+			mov r2, #1			@; columna zocalo
+			bl _gs_escribirStringSub
+			
+	pop {r0-r7, pc}
 
 
 
