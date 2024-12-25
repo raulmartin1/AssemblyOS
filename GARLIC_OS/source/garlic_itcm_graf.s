@@ -206,6 +206,7 @@ _gg_escribirLineaTabla:
 			bl _gs_num2str_dec	@; convertir num natural de 32 bits a su representacion en decimal en el string acabado en \0
 			ldr r0, =string
 			mov r1, r6			@; fila del PID
+			mov r2, #5
 			bl _gs_escribirStringSub
 			
 			add r0, r4, #16		@; posicion keyname (4parametros*4bytes =16)
