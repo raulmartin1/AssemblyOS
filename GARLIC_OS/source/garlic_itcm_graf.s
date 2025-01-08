@@ -74,7 +74,8 @@ _gg_escribirLinea:
 		mov r10, #0				@; nChars=0
 		.LescribirChar:
 			ldrh r9, [r4, r10]	@; r9=_gd_wbfs[ventana].pChars[nChars] ahora son los 16 bits bajos (halfwords)
-			cmp r9 , #128		@; Comprobar si es un caracter personalizado (no hace falta ajustar el valor)
+			@;sub r9, r9, #32
+			cmp r9 , #512		@;(512=128*4 colors) Comprobar si es un caracter personalizado (no hace falta ajustar el valor)
 			bhs .LsetChar
 			sub r9, r9, #32		@; valor ASCII -> codigo baldosa, las baldosas empiezan en 0 y los ASCII en 32 al 127
 			strh r9, [r6]		@; baldosa ocupa 2bytes->halfword, guardamos el codigo en el mapa de fondo

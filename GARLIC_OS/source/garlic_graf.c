@@ -29,6 +29,7 @@ int MapPtr2A;
 const unsigned int char_colors[] = {240, 96, 64};	// amarillo, verde, rojo
 
 char limpiar[]="    ";
+
 char string[16];
 
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por par�metro,
@@ -87,7 +88,7 @@ void _gg_iniGrafA()
 {
 	videoSetMode(MODE_5_2D); // inicializar el procesador gr�fico principal (A) en modo 5, con salida en la pantalla superior de la NDS
 	vramSetBankA(VRAM_A_MAIN_BG_0x06000000); // reservar el banco de memoria de v�deo A
-
+	
 	//inicializar los fondos gr�ficos 2 y 3 en modo Extended Rotation, con un tama�o total de 1024x1024 p�xeles
 	bg2A = bgInit(2, BgType_ExRotation , BgSize_ER_1024x1024, 0, 4);
 	bg3A = bgInit(3, BgType_ExRotation , BgSize_ER_1024x1024, 16, 4);
@@ -102,13 +103,14 @@ void _gg_iniGrafA()
 	// Cada mapa 128 baldoses * 8x8(64) pixels * 1 byte = 8192 bytes
 	// En cada posicion se guarda un halfword = 16 bits = 2 bytes
 	// Cada mapa ocupara 8192 / 2 = 4096 bytes en memoria
+	
 	int base = 4096;
 	int n_paletes = 4;
 	for(int i = 0; i<n_paletes; i++){
-			decompress(garlic_fontTiles, bgGetGfxPtr(bg2A)+ i*base ,LZ77Vram); //descomprimir el contenido de la fuente de letras sobre una zona adecuada de la memoria de v�deo
+			decompress(garlic_fontTiles, bgGetGfxPtr(bg3A)+ i*base ,LZ77Vram); //descomprimir el contenido de la fuente de letras sobre una zona adecuada de la memoria de v�deo
 	}
 	
-	u16* tilesBase = bgGetGfxPtr(bg2A) + base;	// Direccio base de la paleta de colors, ens saltem la primera paleta que es de color blanc
+	u16* tilesBase = bgGetGfxPtr(bg3A) + base;	// Direccio base de la paleta de colors, ens saltem la primera paleta que es de color blanc
 	
 	// Cambiamos el valor de los pixeles de las baldosas, a amarillo verde y rojo con los indices de la paleta char_colors[]
 	for(int i=0; i < n_paletes-1; i++){
@@ -165,9 +167,10 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 	char ValToString[11]; // unsigned int max es 4.294.967.295, 10 numeros mas '\0' de final de cadena 
 	
 	while(formato[index] != '\0') {
+		
 		if(formato[index] == '%' && vTranscrits < 2){
 		index++;	//avanzar al caracter on esta el tipus de format
-		
+		int index_color = formato[index];
 		if (formato[index] == 'c' && vTranscrits < 2) { //si es un caracter
 			if(vTranscrits ==0) {
 				resultado[i] = (char) val1;
@@ -220,19 +223,8 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 			index++;
 			vTranscrits++;
 		}
-		
-		else if(formato[index] == '%' || vTranscrits == 2){ // si es un % literal
-			if(formato[index] == '%') resultado[i] = '%';
-			else if(vTranscrits == 2) {	//no quedan valors a transcriure
-			resultado[i]='%';
-			i++;
-			resultado[i] = formato[index];	//coloquem el caracter literal
-			}
-			i++;
-			index++;
-		}	
-		
-		if(formato[index] == 's' && vTranscrits < 2){ //si es un string i aun quedan valores por transcribir
+
+		else if(formato[index] == 's' && vTranscrits < 2){ //si es un string i aun quedan valores por transcribir
 			char* punteroString = (char*)NULL; //puntero a array de caracteres
 			//fem un casting, de unsignned int a char*
 			if(vTranscrits == 0){ //encara no s'ha transcrit ningun
@@ -249,6 +241,17 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 			index++;
 			vTranscrits++;	//s'ha transcrit un valor
 		}
+		
+		if(formato[index] == '%' || vTranscrits == 2 || (index_color >= '0' && index_color <= '3')){ // si es un % literal
+			if(formato[index] == '%') resultado[i] = '%'; //si es un procentaje literal
+			else if(vTranscrits == 2 || (index_color >= '0' && index_color <= '3')) {	//no quedan valors a transcriure
+			resultado[i]='%';
+			i++;
+			resultado[i] = formato[index];	//coloquem el caracter literal
+			}
+			i++;
+			index++;
+		}	
 		
 	}else {
 		resultado[i] = formato[index]; //coloquem el caracter literal
@@ -299,9 +302,11 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 				else if(index_color == '2') color = 2;
 				else if(index_color == '3') color = 3;
 				
-				i += 2; // ignorar el % y el indice de color
+				//i += 2; // ignorar el % y el indice de color
 				//car= resultado[i];
 			}
+			i++;
+			
 		}
 		if(car == '\t'){
 			int espaciosRestantes = 4 - (nChars % 4); //Calculo de espacios que faltan
@@ -323,14 +328,14 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 			char v2 = resultado[i+3];
 			char s1=0;
 			char s2=0;
-			if(v1>= 0 && v1 <= 57){	// 0=48(ASCII) 9=57(ASCII)
+			if(v1>= 48 && v1 <= 57){	// 0=48(ASCII) 9=57(ASCII)
 				s1 = v1 - 48; 
 			}
 			else if(v1 >= 65 && v1 <= 70) {	// A=65(ASCII) F=70(ASCII)
 				s1= v1 - 55; //convertir a numero
 			}
 			
-			if(v2>= 0 && v2 <= 57) {
+			if(v2>= 48 && v2 <= 57) {
 				s2 = v2 - 48; // 48 = a 0 en ASCII
 			}
 			else if(v2 >= 65 && v2 <= 70) {
@@ -362,13 +367,12 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		
 		i++;
 		car=resultado[i];
-		
-		}
-		
 		_gd_wbfs[ventana].pControl = (color << 28); //coloquem el color als 4 bits alts (del 28 al 31)
 		_gd_wbfs[ventana].pControl += (filaActual << 16); //coloquem el num de la fila actual als 12 bits medios(16 al 27) de pControl
 		_gd_wbfs[ventana].pControl += nChars; //coloca el numero de caracteres escrits en els 16 bits baixos	
-}
+
+		}
+	}
 
 void _gg_setChar(unsigned char n, unsigned char *buffer) {
 	if(n>=128 && n<=255){

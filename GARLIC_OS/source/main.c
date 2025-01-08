@@ -208,11 +208,11 @@ int main(int argc, char **argv) {
 	int key;
 
 	inicializarSistema();
-	crearCara();
-	_gg_escribir("%1********************************", 0, 0, 0);
-	_gg_escribir("%1*                              *", 0, 0, 0);
-	_gg_escribir("%1* \x80Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
-	_gg_escribir("%1*                              *", 0, 0, 0);
+	//crearCara();
+	_gg_escribir("%3********************************", 0, 0, 0);
+	_gg_escribir("%2*                              *", 0, 0, 0);
+	_gg_escribir("%2* \x80Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
+	_gg_escribir("%2*                              *", 0, 0, 0);
 	_gg_escribir("%1********************************", 0, 0, 0);
 	_gg_escribir("%1*** Inicio fase 2 / ProgG\n", 0, 0, 0);
 	
