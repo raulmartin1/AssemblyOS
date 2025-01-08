@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
 	//crearCara();
 	_gg_escribir("%3********************************", 0, 0, 0);
 	_gg_escribir("%2*                              *", 0, 0, 0);
-	_gg_escribir("%2* \x80Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
+	_gg_escribir("%2* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
 	_gg_escribir("%2*                              *", 0, 0, 0);
 	_gg_escribir("%1********************************", 0, 0, 0);
 	_gg_escribir("%1*** Inicio fase 2 / ProgG\n", 0, 0, 0);
