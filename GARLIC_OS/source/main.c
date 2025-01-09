@@ -214,7 +214,7 @@ int main(int argc, char **argv) {
 	_gg_escribir("%2* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
 	_gg_escribir("%2*                              *", 0, 0, 0);
 	_gg_escribir("%1********************************", 0, 0, 0);
-	_gg_escribir("%1*** Inicio fase 2 / ProgG\n", 0, 0, 0);
+	_gg_escribir("%0*** Inicio fase 2 / ProgG\n", 0, 0, 0);
 	
 	while (1)						// bucle infinito
 	{

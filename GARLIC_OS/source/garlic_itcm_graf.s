@@ -239,28 +239,27 @@ _gg_escribirLineaTabla:
 	@;	R3 (color)	->	número de color del texto (0..3)
 	@; pila (vent)	->	número de ventana (0..15)
 _gg_escribirCar:
-	push {r4-r9, lr}
+	push {r4-r8, lr}
 		ldr r4, [sp, #24]	@; Accedemos al valor 24 bytes a partir de la pila sp ( 5 regs * 4 bytes + 4 bytes de este quinto registro) = 24 bytes
 		@; Calculo de la posicion inicial de columna de la ventana
 		mov r5, #PPART
 		sub r5, #1
 		and r6, r4, r5			@; r6 = v % PPART-1 -> ventana % 4
-		mov r9, #VCOLS
-		mul r5, r6, r9			@; r5 = (v%PPART) * VCOLS
-		mov r7, r5				@; r7 = (v%PPART) * VCOLS
+		mov r7, #VCOLS
+		mul r5, r6, r7			@; r5 = (v%PPART) * VCOLS
 		@; Calculo de la posicion inicial de fila de la ventana
-		lsr r6, r0, #L2_PPART	@; r6 = v / PPART
-		mov r9, #VFILS
-		mul r8, r6, r9			@; r8 = (v/PPART) * VFILS
+		lsr r6, r4, #L2_PPART	@; r6 = v / PPART
+		mov r8, #VFILS
+		mul r7, r6, r8			@; r7 = (v/PPART) * VFILS
 		
 		@; Calculo desplazamiento total mapPtr = ((v/PPART) * VFILS) * PCOLS + ((v%PPART) * VCOLS) + (f * VCOLS)
 		mov r6 ,#PCOLS 
-		mul r9, r8, r6			@; r9 = ((v/PPART) * VFILS) * PCOLS
-		add r9, r7				@; r9 = (((v/PPART) * VFILS) * PCOLS) + ((v%PPART) * VCOLS)
+		mul r8, r7, r6			@; r8 = ((v/PPART) * VFILS) * PCOLS
+		add r8, r5				@; r8 = (((v/PPART) * VFILS) * PCOLS) + ((v%PPART) * VCOLS)
 		
 		@; Deplazamiento de coordenada
-		mul r5, r4, r1			@; r5 = PCOLS * vy
-		add r5, r9				@; r5 = (PCOLS* vy) + desplazamiento a la ventana
+		mul r5, r6, r1			@; r5 = PCOLS * vy
+		add r5, r8				@; r5 = (PCOLS* vy) + desplazamiento a la ventana
 		add r5, r0				@; r5 = ((PCOLS*vy) + desplazamiento vent) + vx
 		
 		@; r5= desplazamiento total (coordenadas)
@@ -276,7 +275,7 @@ _gg_escribirCar:
 		add r5, r2				@; r5 = caracter + color*128
 		strh r5, [r6]
 		
-	pop {r4-r9, pc}
+	pop {r4-r8, pc}
 
 
 
