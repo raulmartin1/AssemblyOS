@@ -56,40 +56,39 @@ numeros:
 	.global	frases
 	.align	2
 .LC0:
-	.ascii	"Por fin lleg\363. Salimos en seguida para Carmona.\012"
+	.ascii	"Por fin llego. Salimos en seguida para Carmona.\012"
 	.ascii	"\000"
 	.align	2
 .LC1:
 	.ascii	"El chofer alzaba una ceja, pisaba el acelerador y d"
-	.ascii	"ec\355a, \000"
+	.ascii	"ecia, \000"
 	.align	2
 .LC2:
 	.ascii	"volviendose a medias hacia nosotras:\012\000"
 	.align	2
 .LC3:
-	.ascii	"\011-Podridita que est\341 la carretera.\012\000"
+	.ascii	"\011-Podridita que esta la carretera.\012\000"
 	.align	2
 .LC4:
-	.ascii	"Me preguntaba Mrs. Adams y yo le traduc\355a: \000"
+	.ascii	"Me preguntaba Mrs. Adams y yo le traducia: \000"
 	.align	2
 .LC5:
 	.ascii	"<<La carretera, que esta podrida.>> \000"
 	.align	2
 .LC6:
-	.ascii	"Ella miraba por un lado y hacia los comentarios m\341"
-	.ascii	"s raros. \000"
+	.ascii	"Ella miraba por un lado y hacia los comentarios mas"
+	.ascii	" raros. \000"
 	.align	2
 .LC7:
-	.ascii	"\277Como puede pudrirse una carretera?\012\000"
+	.ascii	"Como puede pudrirse una carretera?\012\000"
 	.align	2
 .LC8:
-	.ascii	"Es Carmona una ciudad toda murallas y t\372neles, l"
-	.ascii	"a m\341s fuerte de Andaluc\355a en los tiempos de J"
-	.ascii	"ul\000"
+	.ascii	"Es Carmona una ciudad toda murallas y tuneles, la m"
+	.ascii	"as fuerte de Andalucia en los tiempos de Jul\000"
 	.align	2
 .LC9:
-	.ascii	"io Cesar. Y fuimos directamente a la ne-\012cr\363p"
-	.ascii	"olis. \000"
+	.ascii	"io Cesar. Y fuimos directamente a la ne-\012cropoli"
+	.ascii	"s. \000"
 	.align	2
 .LC10:
 	.ascii	"Un chico de aire avispado fue a avisar al guardia, "
@@ -103,10 +102,10 @@ numeros:
 	.ascii	"con el perfil de una medalla romana. \000"
 	.align	2
 .LC13:
-	.ascii	"Aparentaba cincuenta y cinco a\361os. \000"
+	.ascii	"Aparentaba cincuenta y cinco anos. \000"
 	.align	2
 .LC14:
-	.ascii	"<<A la paz de Dios>>, dijo cuando lleg\363.\012\000"
+	.ascii	"<<A la paz de Dios>>, dijo cuando llego.\012\000"
 	.align	2
 	.type	frases, %object
 	.size	frases, 60

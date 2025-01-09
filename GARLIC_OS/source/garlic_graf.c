@@ -170,7 +170,7 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 		
 		if(formato[index] == '%' && vTranscrits < 2){
 		index++;	//avanzar al caracter on esta el tipus de format
-		int index_color = formato[index];
+		
 		if (formato[index] == 'c' && vTranscrits < 2) { //si es un caracter
 			if(vTranscrits ==0) {
 				resultado[i] = (char) val1;
@@ -242,9 +242,9 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 			vTranscrits++;	//s'ha transcrit un valor
 		}
 		
-		if(formato[index] == '%' || vTranscrits == 2 || (index_color >= '0' && index_color <= '3')){ // si es un % literal
+		if(formato[index] == '%' || formato[index] == 2 || ( formato[index]>= '0' && formato[index] <= '3')){ // si es un % literal
 			if(formato[index] == '%') resultado[i] = '%'; //si es un procentaje literal
-			else if(vTranscrits == 2 || (index_color >= '0' && index_color <= '3')) {	//no quedan valors a transcriure
+			else if(vTranscrits == 2 || (formato[index] >= '0' && formato[index] <= '3')) {	//no quedan valors a transcriure
 			resultado[i]='%';
 			i++;
 			resultado[i] = formato[index];	//coloquem el caracter literal
