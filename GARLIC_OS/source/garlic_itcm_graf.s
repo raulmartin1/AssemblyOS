@@ -289,28 +289,27 @@ _gg_escribirCar:
 	@;	R3 (color)	->	número de color del texto (0..3)
 	@; pila	(vent)	->	número de ventana (0..15)
 _gg_escribirMat:
-	push {r0-r9, lr}
+	push {r4-r8, lr}
 		ldr r4, [sp, #24]	@; Accedemos al valor 24 bytes a partir de la pila sp ( 5 regs * 4 bytes + 4 bytes de este quinto registro) = 24 bytes
 		@; Calculo de la posicion inicial de columna de la ventana
 		mov r5, #PPART
 		sub r5, #1
 		and r6, r4, r5			@; r6 = v % PPART-1 -> ventana % 4
-		mov r9, #VCOLS
-		mul r5, r6, r9			@; r5 = (v%PPART) * VCOLS
-		mov r7, r5				@; r7 = (v%PPART) * VCOLS
+		mov r7, #VCOLS
+		mul r5, r6, r7			@; r5 = (v%PPART) * VCOLS
 		@; Calculo de la posicion inicial de fila de la ventana
-		lsr r6, r0, #L2_PPART	@; r6 = v / PPART
-		mov r9, #VFILS
-		mul r8, r6, r9			@; r8 = (v/PPART) * VFILS
+		lsr r6, r4, #L2_PPART	@; r6 = v / PPART
+		mov r8, #VFILS
+		mul r7, r6, r8			@; r7 = (v/PPART) * VFILS
 		
 		@; Calculo desplazamiento total mapPtr = ((v/PPART) * VFILS) * PCOLS + ((v%PPART) * VCOLS) + (f * VCOLS)
 		mov r6 ,#PCOLS 
-		mul r9, r8, r6			@; r9 = ((v/PPART) * VFILS) * PCOLS
-		add r9, r7				@; r9 = (((v/PPART) * VFILS) * PCOLS) + ((v%PPART) * VCOLS)
+		mul r8, r7, r6			@; r8 = ((v/PPART) * VFILS) * PCOLS
+		add r8, r5				@; r8 = (((v/PPART) * VFILS) * PCOLS) + ((v%PPART) * VCOLS)
 		
 		@; Deplazamiento de coordenada
-		mul r5, r4, r1			@; r5 = PCOLS * vy
-		add r5, r9				@; r5 = (PCOLS* vy) + desplazamiento a la ventana
+		mul r5, r6, r1			@; r5 = PCOLS * vy
+		add r5, r8				@; r5 = (PCOLS* vy) + desplazamiento a la ventana
 		add r5, r0				@; r5 = ((PCOLS*vy) + desplazamiento vent) + vx
 		
 		@; r5= desplazamiento total (coordenadas)
@@ -322,36 +321,40 @@ _gg_escribirMat:
 		add r6, r6, r5
 		
 		lsl r3, r3, #7		@; color = color*128
+		
 		mov r0, #0			@; i=0, para avanzar en la matriz
-		mov r1, #0			@; fila=0
+		mov r1, #0			@; col = 0
 		mov r8, #PCOLS		@; valor para avanzar a la siguiente fila
 		lsl r8, #1			@; se multiplica por 2 ya que son 2 bytes
+		sub r8, #16			@; le restamos 8 posiciones de columna para estar en el inicio de la fila
+		
+		b .LrecorrerColumnas
+		
 		.LrecorrerFilas:
-			cmp r1, #8
-			beq .LfinalMatriz 
-			mov r5, #0		@; columna = 0 (para escribir)
+			add r6, r8		@; azanzamos una fila
+			mov r1, #0 		@; columna = 0 (para escribir)
 			.LrecorrerColumnas:
-				cmp r5, #16			@;  comprovar si llega al final de la fila
-				beq .LsaltarFila
 				ldrb r7, [r2, r0]		@; 	r7 = matriu[i]
 				cmp r7, #0				@; si null
 				beq .LseguentPos
-				
 				sub r7, #32				@; ajustar codigo ASCII
 				add r7, r3				@; ajustar color al caracter
-				strh r7, [r6, r5]		@; escribir en la posicion
+				strh r7, [r6]			@; escribir en la posicion (direccion mapa)
 				
 			.LseguentPos:
 				add r0, #1				@; seguent pos matriz
-				add r5, #2				@; seguent pos col(2 bytes per accedir al mapa)
+				cmp r0, #64				@; miramos que no haya llegado al final (8x8=64)
+				beq .LfinalMatriz
+				
+				add r6, #2				@; seguent pos col(2 bytes per accedir al mapa)
+				add r1, #1				@; col++
+				cmp r1, #8				@; si llega al final de la fila saltar a la siguiente
+				beq .LrecorrerFilas
 				b .LrecorrerColumnas	@; seguent col
-		.LsaltarFila:
-			add r4,r8			@; seguent fila
-			add r1, #1			@; fila++
-			b .LrecorrerFilas
+	
 		.LfinalMatriz:
 		
-	pop {r0-r9, pc}
+	pop {r4-r8, pc}
 
 
 
