@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 		while (_gd_tickCount < 60)			// esperar 1 segundo
 		{
 			_gp_WaitForVBlank();
-			//porcentajeUso();
+			porcentajeUso();
 		}
 
 		_gg_escribir("**Antes de bloquear procesos**\n", 0, 0, 0);
@@ -97,9 +97,9 @@ int main(int argc, char **argv) {
 		while (_gd_tickCount < 300)			// esperar 4 segundos
 		{
 			_gp_WaitForVBlank();
-			//porcentajeUso();
+			porcentajeUso();
 		}
-		_gs_dibujarTabla();
+		
 
 		_gg_escribir("**Despues de bloquear procesos**\n", 0, 0, 0);
 		_gg_escribir("Proc cola RDY - BLK: %d - %d\n", _gd_nReady + _gd_nDelay, _gd_nBlock, 0);
@@ -107,9 +107,8 @@ int main(int argc, char **argv) {
 		while (_gd_tickCount < 600)			// esperar 5 segundos
 		{
 			_gp_WaitForVBlank();
-			//porcentajeUso();
+			porcentajeUso();
 		}
-		_gs_dibujarTabla();
 
 		int temp1 = _gp_signalS(1);
 		int temp2 = _gp_signalS(2);
@@ -122,13 +121,17 @@ int main(int argc, char **argv) {
 		_gg_escribir("Retorno signalS(2): %d\n", temp2, 0, 0);
 		_gg_escribir("Retorno signalS(3): %d\n", temp3, 0, 0);
 
-		_gs_dibujarTabla();
+		_gp_matarProc(2);
+
+		start = _gm_cargarPrograma("PRNT");
+		if(start) _gp_crearProc(start, 2, "PRNT", 3);
+		else _gg_escribir("*** Programa NO cargado\n", 0, 0, 0);
 		
 		
 		while (_gp_numProc() > 1)			// esperar a que acaben los procesos de usuario
 		{
 			_gp_WaitForVBlank();
-			//porcentajeUso();
+			porcentajeUso();
 		}
 		_gg_escribir("Procesos usuario terminados\n", 0, 0, 0);
 	} else
@@ -137,7 +140,6 @@ int main(int argc, char **argv) {
 
 
 	_gg_escribir("*** Final fase 2_P\n", 0, 0, 0);
-	_gs_dibujarTabla();
 
 	while(1) {
 		_gp_WaitForVBlank();

@@ -353,12 +353,13 @@ _gp_waitS:
 	ldr r2, [r1]			@; obtener su valor
 	add r2, #1				@; sumarle 1
 	str r2, [r1]			@; y guardarlo de nuevo
-	bl _gp_desinhibirIRQs
 	mov r0, #1				@; mover un 1 a R0 para indicar que el proceso se ha bloqueado correctamente
+	bl _gp_desinhibirIRQs
 
 .LreturnWait:
+	bl _gp_WaitForVBlank
 
-	pop {r1-r2, lr}
+	pop {r1-r2, pc}
 
 
 	.global _gp_signalS
@@ -633,6 +634,7 @@ _gp_terminarProc:
 	str r2, [r0]			@; actualizar variable de sincronismo
 	bl _gp_desinhibirIRQs
 .LterminarProc_inf:
+	bl _gp_clearUsage		@; borrar % uso en pantalla inferior
 	bl _gp_WaitForVBlank	@; pausar procesador
 	b .LterminarProc_inf	@; hasta asegurar el cambio de contexto
 
@@ -764,9 +766,36 @@ _gp_matarProc:
 	str r3, [r2]			@; y actualizar su valor
 
 .LfinMatar:
+	ldr r1, =_gp_msg		@; cargar direccion de la variable local para el uso de cpu
+	ldr r2, =0x00202020		@; mover codigos ASCII de tres espacios en blanco y el centinela en R2
+	str r2, [r1]			@; guardar los espacios en blanco en la variable del porcentaje uso
+	add r1, r0, #4			@; fila donde se mostrara (zocalo + 4 filas)
+	ldr r0, =_gp_msg		@; direccion inicial del string de porcentaje
+	mov r2, #28				@; columna donde se mostrara
+	mov r3, #0				@; color del texto
+	bl _gs_escribirStringSub	@; llamada a rutina para mostrar el texto en la pantalla inferior
+	sub r0, r1, #4
 	bl _gp_desinhibirIRQs
 
 	pop {r1-r7, pc}
+
+	@; Rutina local para eliminar porcentaje de uso
+	@; de la pantalla inferior cuando un proceso acaba de forma normal
+_gp_clearUsage:
+	push {r0-r3, lr}
+
+	ldr r0, =_gp_msg
+	ldr r1, =_gd_pidz
+	ldr r1, [r1]
+	and r1, #0xF
+	add r1, #4
+	ldr r2, =0x00202020
+	str r2, [r0]
+	mov r2, #28
+	mov r3, #0
+	bl _gs_escribirStringSub
+
+	pop {r0-r3, pc}
 
 	
 	.global _gp_retardarProc
@@ -946,14 +975,12 @@ _gp_rsiTIMER0:
 	bl _ga_divmod			@; hacer la división
 	pop {r4-r5}				@; R4 = cociente y R5 = resto
 
-	bl _gp_inhibirIRQs
 	bl _gp_intToASCII		@; convertir porcentaje de R4 a caracteres ASCII
 	ldr r0, =_gp_msg		@; direccion inicial del string de porcentaje
 	add r1, r9, #4			@; fila donde se mostrara (zocalo + 4 filas)
 	mov r2, #28				@; columna donde se mostrara
 	mov r3, #0				@; color del texto
 	bl _gs_escribirStringSub	@; llamada a rutina para mostrar el texto en la pantalla inferior
-	bl _gp_desinhibirIRQs
 
 	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
 	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
@@ -987,14 +1014,12 @@ _gp_rsiTIMER0:
 	bl _ga_divmod			@; hacer la división
 	pop {r4-r5}				@; R4 = cociente y R5 = resto
 
-	bl _gp_inhibirIRQs
 	bl _gp_intToASCII		@; convertir porcentaje de R4 a caracteres ASCII
 	ldr r0, =_gp_msg		@; direccion inicial del string de porcentaje
 	add r1, r9, #4			@; fila donde se mostrara (zocalo + 4 filas)
 	mov r2, #28				@; columna donde se mostrara
 	mov r3, #0				@; color del texto
 	bl _gs_escribirStringSub	@; llamada a rutina para mostrar el texto en la pantalla inferior
-	bl _gp_desinhibirIRQs
 
 	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
 	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
@@ -1036,14 +1061,12 @@ _gp_rsiTIMER0:
 	bl _ga_divmod			@; hacer la división
 	pop {r4-r5}				@; R4 = cociente y R5 = resto
 
-	bl _gp_inhibirIRQs
 	bl _gp_intToASCII		@; convertir porcentaje de R4 a caracteres ASCII
 	ldr r0, =_gp_msg		@; direccion inicial del string de porcentaje
 	add r1, r9, #4			@; fila donde se mostrara (zocalo + 4 filas)
 	mov r2, #28				@; columna donde se mostrara
 	mov r3, #0				@; color del texto
 	bl _gs_escribirStringSub	@; llamada a rutina para mostrar el texto en la pantalla inferior
-	bl _gp_desinhibirIRQs
 
 	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
 	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
@@ -1087,14 +1110,12 @@ _gp_rsiTIMER0:
 	bl _ga_divmod			@; hacer la división
 	pop {r4-r5}				@; R4 = cociente y R5 = resto
 
-	bl _gp_inhibirIRQs
 	bl _gp_intToASCII		@; convertir porcentaje de R4 a caracteres ASCII
 	ldr r0, =_gp_msg		@; direccion inicial del string de porcentaje
 	add r1, r9, #4			@; fila donde se mostrara (zocalo + 4 filas)
 	mov r2, #28				@; columna donde se mostrara
 	mov r3, #0				@; color del texto
 	bl _gs_escribirStringSub	@; llamada a rutina para mostrar el texto en la pantalla inferior
-	bl _gp_desinhibirIRQs
 
 	pop {r0-r3}				@; recuperar registros R0-R3 para seguir iterando el bucle
 	mov r4, r4, lsl #24		@; desplazar porcentaje a los 8 bits altos
@@ -1149,10 +1170,10 @@ _gp_intToASCII:
 	movhi r0, r2			@; si no lo es, pasar el resultado a R0 para dividirlo de nuevo
 	bhi .LdivLoop			@; hacer division nuevamente
 
-	cmp r2, #0
-	addeq r2, #' '
-	addhi r2, #'0'
-	strb r2, [r5]
+	cmp r2, #0				@; comprobar si el digito de las centenas es 0
+	addeq r2, #' '			@; si es 0, no mostrar nada en su lugar
+	addhi r2, #'0'			@; si es mayor que 0, sumar el valor del caracter '0' para obtener e corrl codigo ASCII correcto
+	strb r2, [r5]			@; y guardar digito final en la variable local
 
 	pop {r0-r3, r5-r6, pc}
 
