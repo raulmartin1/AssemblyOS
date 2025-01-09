@@ -188,7 +188,7 @@ _gg_escribirLineaTabla:
 		ldr r5, [r4, #0]		@; cargar primer parametro del pcb-> PID
 		cmp r5, #0
 		bne .LescribirCampos	@; Si es el proceso del SO
-		cmp r0, #0				@; Mirar si es el zocalo 0
+		cmp r0, #0				@; Mirar si es el zocalo 0 (Sistema operativo)
 		beq .LescribirCampos
 		
 		@; PID es 0 y Zocalo es diferente de 0-> Proceso acabado, hay que borrar la informacion
@@ -360,10 +360,52 @@ _gg_escribirMat:
 	@; Rutina de Servicio de Interrupción (RSI) para actualizar la representa-
 	@; ción del PC actual.
 _gg_rsiTIMER2:
-	push {lr}
+	push {r0-r6, lr}
+		ldr r4, =_gd_pcbs    	@; Cargar la dirección base del vector de PCBs
+	   
+		mov r5, #0          	@; num zocalo = 0
+		
+		.LcomprobarPCB:
+		cmp r5, #16             @; comprovar si se han procesado los 16 zócalos
+		beq .LfinPCBs           @; Si se procesaron todos, ir al final
 
-
-	pop {pc}
+		ldr r6, [r4, #0]    	@; cargamos PID en r6
+		cmp r6, #0				@; Si el PID es 0 saltar siguiente posicion de PCBs
+		beq .LcomprobarZoc
+		b .LescribirPC
+		
+		.LcomprobarZoc:
+		cmp r5, #0			@; mirar que no sea el zocalo 0 (S.O)
+		bne .LlimpiarPC		@; si el PID es 0 y no es el S.0 -> Proceso acabado | Si es el S.O se actualiza su PC
+		
+		.LescribirPC:
+			ldr r0,  =string	@; donde guardamos el PCActual
+			mov r1, #9			@; El tamaño máximo del string para el PC es 8 + '\0'						
+			ldr r2, [r4, #4]	@; accedemos a al segunda variable PC -> contador de programa (Program Counter)	
+			@; r0: vector, r1: longitud, r2: unsigned int num
+			bl _gs_num2str_hex			@; converte num de 32 bits a hexadecimal
+			ldr r0, =string
+			add r1, r5, #4				@; zocalo actual + saltar 4 primeras filas
+			mov r2, #14					@; columna PCActual
+			mov r3, #0					@; color blanc del text
+			bl _gs_escribirStringSub	@; escribir PID en la tabla
+		b .LsiguienteZoc
+		
+		.LlimpiarPC:					@; Borrar PC
+			ldr r0, =limpiar2			@; 8 espacios para limpiar el PC
+			add r1, r5, #4				@; al zocalo actual le sumamos 4 para saltar las 4 filas del PID
+			mov r2, #14					@; columna PCActual
+			mov r3, #0					@; establecemos color blanco
+			bl _gs_escribirStringSub	@; Escribir string vacio en la tabla
+		
+		.LsiguienteZoc:
+			add r4, #24		@; siguiente pcb = _gd_pcbs + 24 bytes , mida de cada pcb(6 variables * 4 bytes cada una)
+			add r5, #1		@; avanzar de zocalo
+		b .LcomprobarPCB
+		
+		.LfinPCBs:
+		
+	pop {r0-r6, pc}
 
 
 .end

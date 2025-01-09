@@ -29,9 +29,9 @@ int MapPtr2A;
 const unsigned int char_colors[] = {240, 96, 64};	// amarillo, verde, rojo
 
 char limpiar[]="    ";
-
+char limpiar2[]="        ";
 char string[16];
-
+	
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por par�metro,
 												con el color correspondiente */
 void _gg_generarMarco(int v, int color)

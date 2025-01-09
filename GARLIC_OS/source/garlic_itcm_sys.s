@@ -77,8 +77,7 @@ _gs_num2str_dec:
 	mov r0, r8				@; esto indicara si el numero se ha podido codificar
 .Ln1s_fin:					@; completamente en el string (si R0 = 0)
 	pop {r1-r8, pc}
-
-
+	
 
 	.global _gs_num2str_hex
 	@; permite convertir un numero natural de 32 bits a su representacion en
