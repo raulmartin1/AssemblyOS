@@ -82,7 +82,7 @@ void seleccionarPrograma()
 	{
 		_gd_pcbs[i].PID = 0;		// liberar su PCB
 		_gd_nReady = 0;				// eliminar cualquier proceso de cola de READY
-		_gg_escribir("* %3%d%0: proceso destruido\n", i, 0, 0);
+		_gg_escribir("%3* %d: proceso destruido\n", i, 0, 0);
 		_gg_escribirLineaTabla(i, (i == _gi_za ? 2 : 3));
 		if (i != _gi_za)			// si no se trata del propio z�calo actual
 			_gg_generarMarco(i, 3);
@@ -153,7 +153,7 @@ void inicializarSistema() {
 									// del S.O. seleccionado (en verde)
 	
 	if (!_gm_initFS())
-	{	_gg_escribir("%3ERROR: �no se puede utilizar sistema de ficheros!", 0, 0, 0);
+	{	_gg_escribir("%3ERROR: no se puede utilizar sistema de ficheros!", 0, 0, 0);
 		exit(0);
 	}
 
@@ -210,12 +210,13 @@ int main(int argc, char **argv) {
 	inicializarSistema();
 	//crearCara();
 	_gg_escribir("%3********************************", 0, 0, 0);
-	_gg_escribir("%2*                              *", 0, 0, 0);
-	_gg_escribir("%2* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
-	_gg_escribir("%2*                              *", 0, 0, 0);
-	_gg_escribir("%1********************************", 0, 0, 0);
-	_gg_escribir("%0*** Inicio fase 2 / ProgG\n", 0, 0, 0);
-	
+	_gg_escribir("%3*                              *", 0, 0, 0);
+	_gg_escribir("%3* %2Sistema Operativo GARLIC 2.0 %3*", 0, 0, 0);
+	_gg_escribir("%3*                              *", 0, 0, 0);
+	_gg_escribir("%3********************************", 0, 0, 0);
+	_gg_escribir("%1***  Inicio fase 2 / ProgG  ***\n", 0, 0, 0);
+
+
 	while (1)						// bucle infinito
 	{
 		scanKeys();

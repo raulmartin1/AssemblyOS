@@ -192,7 +192,7 @@ _gg_escribirLineaTabla:
 		beq .LescribirCampos
 		
 		@; PID es 0 y Zocalo es diferente de 0-> Proceso acabado, hay que borrar la informacion
-		ldr r0, =limpiar		@; Se carga espacios para pasarlo como primer parametro del _gs_escribirStringSub
+		ldr r0, =limpiar		@; Se cargan 4 espacios para pasarlo como primer parametro del _gs_escribirStringSub
 		add r1, r0, #4			@; Saltamos las primeras 4 filas PID
 		mov r2, #4				@; Columna 4 -> PID
 		bl _gs_escribirStringSub
@@ -399,6 +399,14 @@ _gg_rsiTIMER2:
 			mov r2, #14					@; columna PCActual
 			mov r3, #0					@; establecemos color blanco
 			bl _gs_escribirStringSub	@; Escribir string vacio en la tabla
+
+			@; limpiar tambien PID y Keyname cuando se acaba el proceso
+			ldr r0, =limpiar         	@; 4 espacios para limpiar el keyName y PID
+			mov r2, #4					@; Columna 4 -> PID
+			bl _gs_escribirStringSub    @; Escribir string vacío en la tabla donde esta el PID
+   			ldr r0, =limpiar
+			mov r2, #9                  @; columna keyName
+    		bl _gs_escribirStringSub    @; Escribir string vacío en la tabla donde esta la keyname
 		
 		.LsiguienteZoc:
 			add r4, #24		@; siguiente pcb = _gd_pcbs + 24 bytes , mida de cada pcb(6 variables * 4 bytes cada una)

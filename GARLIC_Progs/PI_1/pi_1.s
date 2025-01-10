@@ -6,23 +6,23 @@
 	.eabi_attribute 30, 6
 	.eabi_attribute 34, 0
 	.eabi_attribute 18, 4
-	.file	"pi_1.c"
+	.file	"PI_1.c"
 	.section	.rodata
 	.align	2
 .LC0:
 	.ascii	"\012-- Programa PI_1  -  PID (%d) --\012\000"
 	.align	2
 .LC1:
-	.ascii	"Numero de fracciones: %d\012\000"
+	.ascii	"%0Numero de fracciones: %d\012\000"
 	.align	2
 .LC2:
-	.ascii	"Fraccio numero: %d es:\012\000"
+	.ascii	"%1Fraccio numero: %d es:\012\000"
 	.align	2
 .LC3:
-	.ascii	"%d.%d\012\000"
+	.ascii	"%3%d.%d\012\000"
 	.align	2
 .LC4:
-	.ascii	"PI Calculado es: %d.%d\012\000"
+	.ascii	"%2PI Calculado es: %d.%d\012\000"
 	.text
 	.align	2
 	.global	_start

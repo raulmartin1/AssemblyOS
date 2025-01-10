@@ -30,7 +30,7 @@ int _start(int arg) {
         fracciones *= 2; 
     }
 
-    GARLIC_printf("Numero de fracciones: %d\n", fracciones);
+    GARLIC_printf("%0Numero de fracciones: %d\n", fracciones);
     // calcula la suma de la serie
     
     for (int i = 0; i < fracciones; i++) { 
@@ -47,14 +47,14 @@ int _start(int arg) {
         pi += signo * result;      
         piDecimal += signo*mod;
 		
-        GARLIC_printf("Fraccio numero: %d es:\n", i+1);
-		GARLIC_printf("%d.%d\n", pi, piDecimal);
+        GARLIC_printf("%1Fraccio numero: %d es:\n", i+1);
+		GARLIC_printf("%3%d.%d\n", pi, piDecimal);
     }
     pi*= 4;
     piDecimal*= 4;
 
     // Mostrar el resultado en formato "entero.decimal"
-    GARLIC_printf("PI Calculado es: %d.%d\n", pi, piDecimal); 
+    GARLIC_printf("%2PI Calculado es: %d.%d\n", pi, piDecimal); 
 
     return 0;
 }
