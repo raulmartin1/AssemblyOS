@@ -200,6 +200,27 @@ void crearCara(){
     baldosa[53] = 0x00;
 	
 	_gg_setChar(128, baldosa);
+	for (int t = 1; t <= 7; t++) { // Generar 7 baldosas
+        for (int i = 0; i < 64; i++) {
+            // Cambiar patrón en función de t (baldosa actual)
+            if (t == 1) {
+                baldosa[i] = 0xFF; // Todo blanco
+            } else if (t == 2) {
+                baldosa[i] = 0xAF; // Todo negro
+            } else if (t == 3) {
+                baldosa[i] = (i % 2 == 0) ? 0xFF : 0x00; // Alternado por píxeles
+            } else if (t == 4) {
+                baldosa[i] = ((i / 8) % 2 == 0) ? 0xFF : 0x00; // Líneas alternas
+            } else if (t == 5) {
+                baldosa[i] = (i % 8 == i / 8) ? 0x00 : 0xFF; // Diagonal principal
+            } else if (t == 6) {
+                baldosa[i] = ((i % 8 + i / 8) % 2 == 0) ? 0xFF : 0xBB; // Ajedrezado
+            } else if (t == 7) {
+                baldosa[i] = (i % 8 == 7 - i / 8) ? 0x00 : 0xFF; // Diagonal inversa
+            }
+			_gg_setChar(128+t, baldosa);
+        }
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -208,15 +229,16 @@ int main(int argc, char **argv) {
 	int key;
 
 	inicializarSistema();
-	//crearCara();
+	crearCara();
 	_gg_escribir("%3********************************", 0, 0, 0);
 	_gg_escribir("%3*                              *", 0, 0, 0);
 	_gg_escribir("%3* %2Sistema Operativo GARLIC 2.0 %3*", 0, 0, 0);
 	_gg_escribir("%3*                              *", 0, 0, 0);
 	_gg_escribir("%3********************************", 0, 0, 0);
 	_gg_escribir("%1***  Inicio fase 2 / ProgG  ***\n", 0, 0, 0);
-
-
+	_gg_escribir("%1\\x80 \\x81 \\x82 \n", 0, 0, 0);
+	_gg_escribir("%2\\x83 \\x84 \\x85 \n", 0, 0, 0);
+	_gg_escribir("%3\\x86 \\x87 \n", 0, 0, 0);
 	while (1)						// bucle infinito
 	{
 		scanKeys();

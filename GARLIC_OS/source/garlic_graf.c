@@ -292,7 +292,6 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 	//Ahora los mas bajos ser�n los que antes eran los 16 altos, filaActual=16 bits mas altos de pControl 
 
 	int i=0; 
-	
 	char car = resultado[i];	//caracter actual
 	while(car != '\0'){
 		
@@ -318,13 +317,9 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		}
 		
 		}
-		
-		else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> a�adir caracter al buffer de la ventana
-			_gd_wbfs[ventana].pChars[nChars] = car + (color*128); //se a�ade el caracter
-			nChars++;
-		}
-		else if(car == '\\' && resultado[i+1]=='x') {
+		else if(car == 92 && resultado[i+1]=='x') { //caracter personalizado, 92 en ASCII es la barra invertida
 			unsigned char simbol;
+			int zocalo = _gd_pidz & 0xF;
 			char v1 = resultado[i+2];
 			char v2 = resultado[i+3];
 			char s1=0;
@@ -346,12 +341,21 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 			simbol = (s1<<4); // mueve 4 posiciones a la izquierda
 			simbol += s2;	//a�ade el segundo valor
 			
-			if (simbol >= 128 && simbol <=255) {
-				_gd_wbfs[ventana].pChars[nChars]=simbol;
-				nChars++;
 			
-			}
+			simbol = (s1 << 4) + s2; // Construir número
+    		if (simbol >= 128 && simbol <= 135) {
+        	simbol = (simbol -128) % 8;
+			simbol = simbol + (zocalo * 8);  // Ajustar al índice de baldosas según el zócalo
+        	_gd_wbfs[ventana].pChars[nChars] = simbol + (128 * color) + 512; // Aplicar color y desplazar
+   			}
+			nChars++;
+			
+			
 			i=i+3;
+		}
+		else if ( car != '\n' && nChars < VCOLS) { //No es tabulador, ni salto de linea y hay espacio -> a�adir caracter al buffer de la ventana
+			_gd_wbfs[ventana].pChars[nChars] = car + (color*128); //se a�ade el caracter
+			nChars++;
 		}
 		if(car == '\n' || nChars == VCOLS) {
 			/* _gp_WaitForVBlank: sustituto de swiWaitForVBlank() para Garlic; */
@@ -374,14 +378,48 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		car=resultado[i];
 		}
 	}
+u16 transformarPixel(u16 pixelActual, u16 color);
 
 void _gg_setChar(unsigned char n, unsigned char *buffer) {
 	if(n>=128 && n<=255){
+		unsigned int colors[] = {240, 96, 64};	// blanco, amarillo, verde, rojo
+		int n_paletes=3;
+		
 		int base = 0x06000000; 				
 		//16KB * 4(tile_base) = 64 KB -> 64*1024= 65536-> 0x10000
 		base=base+0x10000;				//base donde acaban los 127 caracteres predeterminados
-		int desplazamiento = base+(n*64); //64 bytes que ocupa un baldosa completa 8x8
-		dmaCopy(buffer, (u16*)desplazamiento, 64); //copiamos la baldosa en la posicion de la memoria
+		//128 * 3 colores = 512 * 64 bytes cada baldosa -> 0x6000
+		int saltarCaracteresColores = 0x6000;
+		base = base + saltarCaracteresColores;
+		int zocalo = (_gd_pidz & 0xF)*8;		// cogemos los 4 bits mas bajos(numero de zocalo)
+		int caracterActual = (n-128) % 8;		// indice del caracter dentro del conjunto de 8 caracteres por proceso
+		int desplazamientoChar = (128 + zocalo + caracterActual) * 64; //por 64 bytes por baldosa
+		
+		int direccionTile = base + desplazamientoChar;	// direccion donde guardaremos el Tile (en blanco) 
+		dmaCopy(buffer, (u16 *)direccionTile ,64);		// copiar los dadtos del tile a la direccion
+		//128*64 saltamos el color blanco -> 0x2000
+		direccionTile = direccionTile + 0x2000;
+		//u16 bufferColor[32]; //64 pixeles por tile 8x8
+		for(int i=0; i< n_paletes; i++){
+			int desplazamientoColor = 1024 * 4 * 2; 	// cada bloque de colores 1024 bytes * 4 colores * 2 bytes cada baldosa
+			int direccionTileColor = direccionTile + i*desplazamientoColor; // seleccionamos el color
+
+			u16 *direccionColor = (u16 *) direccionTileColor;
+			
+			for(int j=0; j<32; j++){	//32 pixeles (8x8)
+				u16 pixelActual = ((u16 *) buffer)[j];
+				direccionColor[j] = transformarPixel(pixelActual, (u16)colors[i]);
+			}
+		}
+		
 		bgUpdate();
+		}
 	}
+
+	u16 transformarPixel(u16 pixelActual, u16 color){
+		
+		if(pixelActual == 0x0FF) return color;
+		else if(pixelActual == 0xFF00) return color <<8;
+		else if(pixelActual == 0xFFFF) return color | (color << 8);
+		else return pixelActual;
 }

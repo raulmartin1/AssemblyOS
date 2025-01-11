@@ -23,6 +23,9 @@
 	.align	2
 .LC4:
 	.ascii	"%2PI Calculado es: %d.%d\012\000"
+	.align	2
+.LC5:
+	.ascii	"%1 \\x80 %2\\x84 %3\\x85\000"
 	.text
 	.align	2
 	.global	_start
@@ -139,6 +142,8 @@ _start:
 	ldr	r1, [sp, #36]
 	ldr	r0, .L11+16
 	bl	GARLIC_printf
+	ldr	r0, .L11+20
+	bl	GARLIC_printf
 	mov	r3, #0
 	mov	r0, r3
 	add	sp, sp, #44
@@ -152,5 +157,6 @@ _start:
 	.word	.LC2
 	.word	.LC3
 	.word	.LC4
+	.word	.LC5
 	.size	_start, .-_start
 	.ident	"GCC: (devkitARM release 46) 6.3.0"
