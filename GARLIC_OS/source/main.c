@@ -239,6 +239,20 @@ int main(int argc, char **argv) {
 	_gg_escribir("%1\\x80 \\x81 \\x82 \n", 0, 0, 0);
 	_gg_escribir("%2\\x83 \\x84 \\x85 \n", 0, 0, 0);
 	_gg_escribir("%3\\x86 \\x87 \n", 0, 0, 0);
+	char matriz[8][8] = {
+    {'M', 'A', 'T', 'R', 'I', 'Z', '1', '2'},
+    {'3', '4', '5', '6', '7', '8', '9', '0'},
+    {'1', '2', '3', '4', '5', '6', '7', '8'},
+    {'9', '0', '1', '2', '3', '4', '5', '6'},
+    {'7', '8', '9', '0', '1', '2', '3', '4'},
+    {'5', '6', '7', '8', '9', '0', '1', '2'},
+    {'3', '4', '5', '6', '7', '8', '9', '0'},
+    {'1', '2', '3', '4', '5', '6', '7', '8'}
+};
+	_gg_escribirMat(0, 10, matriz, 1, 0);
+
+	_gg_escribirCar(15, 15, 65, 2, 0); // Escribe el carácter 'a'  en la posición (15,15) de la ventana 0 con color verde
+	_gg_escribirCar(16, 15, 66, 3, 0); // Escribe el carácter 'b' en la posición (16,15) de la ventana 0 con color rojo
 	while (1)						// bucle infinito
 	{
 		scanKeys();
