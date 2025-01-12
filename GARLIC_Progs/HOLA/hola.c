@@ -19,21 +19,6 @@ int _start(int arg)				/* funci�n de inicio : no se usa 'main' */
 	
 									// esccribir mensaje inicial
 	GARLIC_printf("-- Programa HOLA  -  PID (%d) --\n", GARLIC_pid());
-
-
-	// Modificacion para pruebas de semaforos
-	GARLIC_delay(arg);
-
-	GARLIC_printf("If arg=2, arg->3\n");
-
-	if(arg == 2) arg++;
-
-	GARLIC_printf("WaitS en semaforo %d!\n", arg);
-
-	int temp = GARLIC_wait(arg);
-
-	GARLIC_printf("Retorno waitS: %d\n", temp);
-	// Fin modificacion para pruebas de semaforos
 	
 	j = 1;							// j = c�lculo de 10 elevado a arg
 	for (i = 0; i < arg; i++)
