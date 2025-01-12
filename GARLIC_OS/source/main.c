@@ -33,8 +33,8 @@ void porcentajeUso()
 const char *argumentosDisponibles[4] = { "0", "1", "2", "3"};
 		// se supone que estos programas est�n disponibles en el directorio
 		// "Programas" de las estructura de ficheros de Nitrofiles
-const char *progs[9] = {"BORR","CRON","HOLA","PONG","PRNT","MMLL","OPEN","PRES","PI_1"};
-const unsigned char num_progs = 9;
+const char *progs[11] = {"BORR","CRON","HOLA","PONG","PRNT","MMLL","OPEN","PRES","PI_1","LABE","DESC"};
+const unsigned char num_progs = 11;
 
 
 /* Funci�n para presentar una lista de opciones y escoger una: devuelve el �ndice de la opci�n
@@ -88,22 +88,21 @@ unsigned char escogerOpcion(char *opciones[], unsigned char num_opciones)
 void seleccionarPrograma()
 {
 	intFunc start;
-	int ind_prog, argumento, i;
+	int ind_prog, argumento;
 
-	i = 1;
+	/*int i = 1;
 	while ((i < 16) &&	(_gd_pcbs[i].PID == 0))	// buscar si hay otro proceso en marcha
 	{
 		i++;
 	}
 	if (i < 16)						// en caso de encontrar otro proceso activo
 	{
-		_gd_pcbs[i].PID = 0;		// liberar su PCB
-		_gd_nReady = 0;				// eliminar cualquier proceso de cola de READY
+		_gp_matarProc(i);
 		_gg_escribir("%3* %d: proceso destruido\n", i, 0, 0);
 		_gg_escribirLineaTabla(i, (i == _gi_za ? 2 : 3));
 		if (i != _gi_za)			// si no se trata del propio z�calo actual
 			_gg_generarMarco(i, 3);
-	}
+	}*/
 	_gs_borrarVentana(_gi_za, 1);
 	_gg_escribir("%1*** Seleccionar programa :\n", 0, 0, _gi_za);
 	ind_prog = escogerOpcion((char **) progs, num_progs);
@@ -262,6 +261,7 @@ int main(int argc, char **argv) {
 	_gg_escribir("%1\\x80 \\x81 \\x82 \n", 0, 0, 0);
 	_gg_escribir("%2\\x83 \\x84 \\x85 \n", 0, 0, 0);
 	_gg_escribir("%3\\x86 \\x87 \n", 0, 0, 0);
+
 	char matriz[8][8] = {
     {'M', 'A', 'T', 'R', 'I', 'Z', '1', '2'},
     {'3', '4', '5', '6', '7', '8', '9', '0'},
@@ -270,12 +270,38 @@ int main(int argc, char **argv) {
     {'7', '8', '9', '0', '1', '2', '3', '4'},
     {'5', '6', '7', '8', '9', '0', '1', '2'},
     {'3', '4', '5', '6', '7', '8', '9', '0'},
-    {'1', '2', '3', '4', '5', '6', '7', '8'}
-};
-	_gg_escribirMat(0, 10, matriz, 1, 0);
+    {'1', '2', '3', '4', '5', '6', '7', '8'}};
 
-	_gg_escribirCar(15, 15, 65, 2, 0); // Escribe el carácter 'a'  en la posición (15,15) de la ventana 0 con color verde
-	_gg_escribirCar(16, 15, 66, 3, 0); // Escribe el carácter 'b' en la posición (16,15) de la ventana 0 con color rojo
+	_gg_escribirMat(0, 16, matriz, 1, 0);
+
+	_gg_escribirCar(15, 21, 65, 2, 0); // Escribe el carácter 'a'  en la posición (15,15) de la ventana 0 con color verde
+	_gg_escribirCar(16, 21, 66, 3, 0); // Escribe el carácter 'b' en la posición (16,15) de la ventana 0 con color rojo
+	
+	intFunc testP;
+
+	testP = _gm_cargarPrograma("PRES");
+	if(testP){
+		_gp_crearProc(testP, 1, "PRES", 1);
+		_gp_crearProc(testP, 4, "PRES", 2);
+		_gp_crearProc(testP, 5, "PRES", 3);
+	}
+	else{
+		_gg_escribir("%3Programa NO cargado!\n", 0, 0, 0);
+	}
+
+	while (_gd_tickCount < 600){
+		_gp_WaitForVBlank();
+	}
+
+	int temp1 = _gp_signalS(1);
+	int temp2 = _gp_signalS(2);
+	int temp3 = _gp_signalS(3);
+
+	_gg_escribir("%1Resultado signalS(1): %d\n", temp1, 0, 0);
+	_gg_escribir("%1Resultado signalS(2): %d\n", temp2, 0, 0);
+	_gg_escribir("%1Resultado signalS(3): %d\n", temp3, 0, 0);
+
+	
 	while (1)						// bucle infinito
 	{
 		scanKeys();

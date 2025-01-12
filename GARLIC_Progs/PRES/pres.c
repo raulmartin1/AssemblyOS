@@ -12,7 +12,7 @@
 
 int _start(int arg)				/* funci�n de inicio : no se usa 'main' */
 {
-	unsigned int prestamo, cuotas, precio, mod, temp;
+	unsigned int prestamo, cuotas, precio, mod, temp, retorno;
 
 	//comprobar que argumento tiene un valor correcto
 	if(arg < 0) arg = 0;
@@ -36,7 +36,12 @@ int _start(int arg)				/* funci�n de inicio : no se usa 'main' */
 	//mostramos el numero de cuotas aleatorias en las que hay que pagar el prestamo
 	GARLIC_printf("(%d)\tCuotas a pagar: %d\n", GARLIC_pid(), cuotas);
 
-	GARLIC_wait(7);	// bloquear el proceso usando el _gd_mutex[7]
+	if(arg==2){
+		retorno = GARLIC_wait(arg+1);
+	}
+	else{
+		retorno = GARLIC_wait(arg);
+	}
 
 	GARLIC_printf("(%d)\tCalculamos valor prestamo en centimos entre cuotas, y obtenemos valor", GARLIC_pid());
 	GARLIC_printf(" cuotas en centimos, con un error de menos de 1 centimo en cada cuota.\n");
@@ -65,7 +70,7 @@ int _start(int arg)				/* funci�n de inicio : no se usa 'main' */
 	GARLIC_printf("(%d)\tCoste total: %d euros\n", GARLIC_pid(), precio);
 	GARLIC_printf("(%d)\tcon %d centimos.\n", GARLIC_pid(), mod);
 
-	GARLIC_signal(0);
+	GARLIC_printf("%2Retorno waitS: %d\n", retorno);
 
 	return 0;
 }
