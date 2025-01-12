@@ -80,7 +80,7 @@ typedef struct				// Estructura del buffer de una ventana
 							//		baldosa correspondiente al car�cter+color
 } PACKED garlicWBUF;
 
-extern garlicWBUF _gd_wbfs[16];	// vector con los buffers de 4 ventanas
+extern garlicWBUF _gd_wbfs[16];	// vector con los buffers de 16 ventanas
 
 
 extern int _gd_stacks[15*128];	// vector de pilas de los procesos de usuario
@@ -223,9 +223,7 @@ extern intFunc _gm_cargarPrograma(char *keyName);
 					y seg�n el valor de las direcciones de las referencias a
 					reubicar y de las direcciones de inicio de los segmentos de
 					c�digo (pAddr_code) y datos (pAddr_data); */
-extern void _gm_reubicar(char *fileBuf,
-							unsigned int pAddr_code, unsigned int *dest_code,
-							unsigned int pAddr_data, unsigned int *dest_data);
+extern void _gm_reubicar(char *fileBuf, unsigned int pAddr, unsigned int *dest);
 
 
 /* _gm_reservarMem: rutina para reservar un conjunto de franjas de memoria 

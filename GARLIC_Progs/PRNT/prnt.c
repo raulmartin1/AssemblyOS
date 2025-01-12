@@ -1,15 +1,15 @@
 /*------------------------------------------------------------------------------
 
-	"PRNT.c" : programa de test de la función de API GARLIC_printf();
-				(versión 1.0)
+	"PRNT.c" : programa de test de la funciï¿½n de API GARLIC_printf();
+				(versiï¿½n 1.0)
 	
 	Imprime diversos mensajes por ventana, comprobando el funcionamiento de
-	la inserción de valores con distintos formatos, con o sin traspaso del
-	límite de la última columna de la ventana.
+	la inserciï¿½n de valores con distintos formatos, con o sin traspaso del
+	lï¿½mite de la ï¿½ltima columna de la ventana.
 
 ------------------------------------------------------------------------------*/
 
-#include <GARLIC_API.h>			/* definición de las funciones API de GARLIC */
+#include <GARLIC_API.h>			/* definiciï¿½n de las funciones API de GARLIC */
 
 /* definicion de variables globales */
 const unsigned int numeros[] = { 0, 3, 5, 7,
@@ -23,35 +23,35 @@ const unsigned int numeros[] = { 0, 3, 5, 7,
 								268435456, 471103972, 631297553, 825266928,
 								1153631781, 2879320213, 3127223846, 4294967295};
 				
-char * const frases[] = {"Por fin llegó. Salimos en seguida para Carmona.\n",
-					"El chofer alzaba una ceja, pisaba el acelerador y decía, ",
+char * const frases[] = {"Por fin llego. Salimos en seguida para Carmona.\n",
+					"El chofer alzaba una ceja, pisaba el acelerador y decia, ",
 					"volviendose a medias hacia nosotras:\n",
-					"\t-Podridita que está la carretera.\n",
-					"Me preguntaba Mrs. Adams y yo le traducía: ",
+					"\t-Podridita que esta la carretera.\n",
+					"Me preguntaba Mrs. Adams y yo le traducia: ",
 					"<<La carretera, que esta podrida.>> ",
-					"Ella miraba por un lado y hacia los comentarios más raros. ",
-					"¿Como puede pudrirse una carretera?\n",
-					"Es Carmona una ciudad toda murallas y túneles, la más fuerte de Andalucía en los tiempos de Jul",
-					"io Cesar. Y fuimos directamente a la ne-\ncrópolis. ",
+					"Ella miraba por un lado y hacia los comentarios mas raros. ",
+					"Como puede pudrirse una carretera?\n",
+					"Es Carmona una ciudad toda murallas y tuneles, la mas fuerte de Andalucia en los tiempos de Jul",
+					"io Cesar. Y fuimos directamente a la ne-\ncropolis. ",
 					"Un chico de aire avispado fue a avisar al guardia, que",
 					" era un hombre flaco, alto, sin una onza de grasa, ",
 					"con el perfil de una medalla romana. ",
-					"Aparentaba cincuenta y cinco años. ",
-					"<<A la paz de Dios>>, dijo cuando llegó.\n"};
+					"Aparentaba cincuenta y cinco anos. ",
+					"<<A la paz de Dios>>, dijo cuando llego.\n"};
 
-int _start(int arg)				/* función de inicio : no se usa 'main' */
+int _start(int arg)				/* funciï¿½n de inicio : no se usa 'main' */
 {
 	unsigned int i, j;
 	
-	if (arg < 0) arg = 0;			// limitar valor máximo y 
-	else if (arg > 3) arg = 3;		// valor mínimo del argumento
+	if (arg < 0) arg = 0;			// limitar valor mï¿½ximo y 
+	else if (arg > 3) arg = 3;		// valor mï¿½nimo del argumento
 	
 									// esccribir mensaje inicial
 	GARLIC_printf("-- Programa PRNT  -  PID (%d) --\n", GARLIC_pid());
 	
 	GARLIC_printf("\nPrueba juego de caracteres:\n");
-	for (i = 32; i < 128; i++)		// imprimir todo el repertorio de códigos
-		GARLIC_printf("%c", i);		// ASCII visibles (>31) y estándar (<128)
+	for (i = 32; i < 128; i++)		// imprimir todo el repertorio de cï¿½digos
+		GARLIC_printf("%c", i);		// ASCII visibles (>31) y estï¿½ndar (<128)
 
 	GARLIC_printf("\n\nPrueba numeros:\n");
 	for (i = 0; i < 10; i++)

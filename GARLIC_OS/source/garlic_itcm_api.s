@@ -1,7 +1,7 @@
 @;==============================================================================
 @;
-@;	"garlic_itcm_api.s":	codigo de las rutinas del API de GARLIC 2.0
-@;							(ver "GARLIC_API.h" para descripcion de las
+@;	"garlic_itcm_api.s":	c�digo de las rutinas del API de GARLIC 2.0
+@;							(ver "GARLIC_API.h" para descripci�n de las
 @;							 funciones correspondientes)
 @;
 @;==============================================================================
@@ -29,7 +29,7 @@ _ga_pid:
 _ga_random:
 	push {r1-r5, lr}
 	ldr r0, =_gd_seed
-	ldr r1, [r0]			@; R1 = valor de semilla de numeros aleatorios
+	ldr r1, [r0]			@; R1 = valor de semilla de n�meros aleatorios
 	ldr r2, =0x0019660D
 	ldr r3, =0x3C6EF35F
 	umull r4, r5, r1, r2	@; R5:R4 = _gd_seed * 0x19660D
@@ -111,7 +111,7 @@ _ga_divmodL:
 	mov r3, #0				@; R3:R2 = denominador
 	bl __aeabi_ldivmod
 	strd r0, [r5]
-	str r2, [r6]			@; guardar resultados en memoria (por referencia)			
+	str r2, [r6]			@; guardar resultados en memoria (por referencia)
 	mov r0, #0				@; codigo de OK
 .LdivL_fin:
 	pop {r4-r6, pc}
@@ -245,7 +245,7 @@ _ga_delay:
 .Ldelay1:
 	cmp r0, #600
 	movhi r0, #600			@; limitar el n�mero de segundos a 600 (10 minutos)
-	bl _gp_retardarProc
+	@;bl _gp_retardarProc
 .Ldelay2:
 	pop {r2-r3, pc}
 
