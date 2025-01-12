@@ -279,6 +279,7 @@ int main(int argc, char **argv) {
 	
 	intFunc testP;
 
+	_gg_escribir("%0***Pruebas semaforos...\n", 0, 0, 0);
 	testP = _gm_cargarPrograma("PRES");
 	if(testP){
 		_gp_crearProc(testP, 1, "PRES", 1);
@@ -300,6 +301,30 @@ int main(int argc, char **argv) {
 	_gg_escribir("%1Resultado signalS(1): %d\n", temp1, 0, 0);
 	_gg_escribir("%1Resultado signalS(2): %d\n", temp2, 0, 0);
 	_gg_escribir("%1Resultado signalS(3): %d\n", temp3, 0, 0);
+
+	while(_gp_numProc() > 1){
+		_gp_WaitForVBlank();
+	}
+
+	_gg_escribir("%0***Prueba matarProc...\n", 0, 0, 0);
+	testP = _gm_cargarPrograma("HOLA");
+	if(testP){
+		_gp_crearProc(testP, 1, "HOLA", 3);
+		_gp_crearProc(testP, 4, "HOLA", 3);
+		_gp_crearProc(testP, 5, "HOLA", 3);
+	}
+	else{
+		_gg_escribir("%3Programa NO cargado!\n", 0, 0, 0);
+	}
+
+	while(_gd_tickCount < 900){
+		_gp_WaitForVBlank();
+	}
+
+	_gp_matarProc(1);
+	_gp_matarProc(4);
+	_gp_matarProc(5);
+	_gg_escribir("%3Eliminados procesos 1,4,5\n", 0, 0, 0);
 
 	
 	while (1)						// bucle infinito
