@@ -1,17 +1,34 @@
 /*------------------------------------------------------------------------------
 
-	"main.c" : fase 2 / ProgG
-
-	Programa de control del sistema operativo GARLIC, versi�n 2.0
+PROGRAMA PRINCIPAL GARLIC OS
 
 ------------------------------------------------------------------------------*/
 #include <nds.h>
+
 #include "garlic_system.h"	// definicion de funciones y variables de sistema
 
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
 unsigned char baldosa[64];
+
+const short divFreq0 = -33513982/1024;		// frecuencia de TIMER0 = 1 Hz
 const short divFreq2 = -33513982/(1024*4);	// frecuencia de TIMER2 = 4 Hz
+
+
+/* funcion para escribir los porcentajes de uso de la CPU de los procesos de los
+		cuatro primeros zocalos, en el caso que la RSI del TIMER0 haya realizado
+		el calculo */
+void porcentajeUso()
+{
+	if (_gd_sincMain & 1)			// verificar sincronismo de timer0
+	{
+		_gd_sincMain &= 0xFFFE;			// poner bit de sincronismo a cero
+		_gg_escribir("***\t%d%%  %d%%", _gd_pcbs[0].workTicks >> 24,
+										_gd_pcbs[1].workTicks >> 24, 0);
+		_gg_escribir("  %d%%  %d%%\n", _gd_pcbs[2].workTicks >> 24,
+										_gd_pcbs[3].workTicks >> 24, 0);
+	}
+}
 
 const char *argumentosDisponibles[4] = { "0", "1", "2", "3"};
 		// se supone que estos programas est�n disponibles en el directorio
@@ -140,9 +157,9 @@ void gestionSincronismos()
 void inicializarSistema() {
 //------------------------------------------------------------------------------
 
-	_gd_seed = *punixTime;	// inicializar semilla para n�meros aleatorios con
+	_gd_seed = *punixTime;	// inicializar semilla para numeros aleatorios con
 	_gd_seed <<= 16;		// el valor de tiempo real UNIX, desplazado 16 bits
-	
+
 	_gd_pcbs[0].keyName = 0x4C524147;	// "GARL"
 	
 	_gg_iniGrafA();					// inicializar gr�ficos
@@ -169,6 +186,12 @@ void inicializarSistema() {
 	irqSet(IRQ_VCOUNT, _gi_movimientoVentanas);
 	REG_DISPSTAT |= 0xE620;			// fijar linea VCOUNT a 230 y activar int.
 	irqEnable(IRQ_VCOUNT);			// de VCOUNT
+	
+
+	irqSet(IRQ_TIMER0, _gp_rsiTIMER0);
+	irqEnable(IRQ_TIMER0);				// instalar la RSI para el TIMER0
+	TIMER0_DATA = divFreq0; 
+	TIMER0_CR = 0xC3;  	// Timer Start | IRQ Enabled | Prescaler 3 (F/1024)
 	
 	REG_IME = IME_ENABLE;			// activar las interrupciones en general
 }

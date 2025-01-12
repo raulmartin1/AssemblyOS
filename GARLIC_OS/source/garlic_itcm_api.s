@@ -211,6 +211,9 @@ _ga_printchar:
 	add sp, #4				@; eliminar 4� par�metro de la pila
 	pop {r4-r8, pc}
 
+_gi_message:
+	.asciz "print char (%d, %d) :  \n"
+
 
 	.align 2
 	.global _ga_printmat
