@@ -341,12 +341,10 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 			simbol = (s1<<4); // mueve 4 posiciones a la izquierda
 			simbol += s2;	//a�ade el segundo valor
 			
-			
-			simbol = (s1 << 4) + s2; // Construir número
     		if (simbol >= 128 && simbol <= 135) {
-        	simbol = (simbol -128) % 8;
+        	simbol = (simbol -128);	  // Modulo para limitar el rango
 			simbol = simbol + (zocalo * 8);  // Ajustar al índice de baldosas según el zócalo
-        	_gd_wbfs[ventana].pChars[nChars] = simbol + (128 * color) + 512; // Aplicar color y desplazar
+        	_gd_wbfs[ventana].pChars[nChars] = simbol + (128 * color) + 512; // Aplicar color y desplazar(a partir de 512, 128 cada color de tiles normals)
    			}
 			nChars++;
 			
@@ -396,17 +394,22 @@ void _gg_setChar(unsigned char n, unsigned char *buffer) {
 		int desplazamientoChar = (128 + zocalo + caracterActual) * 64; //por 64 bytes por baldosa
 		
 		int direccionTile = base + desplazamientoChar;	// direccion donde guardaremos el Tile (en blanco) 
-		dmaCopy(buffer, (u16 *)direccionTile ,64);		// copiar los dadtos del tile a la direccion
+			
+		u16 *direccionTileBlanco = (u16 *)direccionTile;
+		for (int i = 0; i < 32; i++) {
+			u16 pixelBlanco = ((u16 *)buffer)[i];
+   			direccionTileBlanco[i] = pixelBlanco;		// copiar los dadtos del tile blanco en la direccion
+		}
 		//128*64 saltamos el color blanco -> 0x2000
 		direccionTile = direccionTile + 0x2000;
-		//u16 bufferColor[32]; //64 pixeles por tile 8x8
-		for(int i=0; i< n_paletes; i++){
-			int desplazamientoColor = 1024 * 4 * 2; 	// cada bloque de colores 1024 bytes * 4 colores * 2 bytes cada baldosa
+
+		for(int i=0; i< n_paletes; i++){  
+			int desplazamientoColor = 4096 * 2;  //4096 * 2 = 8192 bytes / 64 bytes = 128 tiles
 			int direccionTileColor = direccionTile + i*desplazamientoColor; // seleccionamos el color
 
 			u16 *direccionColor = (u16 *) direccionTileColor;
 			
-			for(int j=0; j<32; j++){	//32 pixeles (8x8)
+			for(int j=0; j<32; j++){	//cada pixel son 16 bits=2bytes ,64pixeles/2bytes =32 iteraciones 32 pixeles (8x8)
 				u16 pixelActual = ((u16 *) buffer)[j];
 				direccionColor[j] = transformarPixel(pixelActual, (u16)colors[i]);
 			}
@@ -418,8 +421,8 @@ void _gg_setChar(unsigned char n, unsigned char *buffer) {
 
 	u16 transformarPixel(u16 pixelActual, u16 color){
 		
-		if(pixelActual == 0x0FF) return color;
-		else if(pixelActual == 0xFF00) return color <<8;
-		else if(pixelActual == 0xFFFF) return color | (color << 8);
+		if(pixelActual == 0x0FF) return color; // si es blanco se cambia el color al actual
+		else if(pixelActual == 0xFF00) return color <<8;	// (bits altos activados)Representa píxeles donde el color está en los bits altos (se desplaza el color a los bits altos)
+		else if(pixelActual == 0xFFFF) return color | (color << 8); //todos los bits están activados, se combian el color de lso bits bajos y altos
 		else return pixelActual;
 }
