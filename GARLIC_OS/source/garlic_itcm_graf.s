@@ -291,7 +291,6 @@ _gg_escribirCar:
 _gg_escribirMat:
 	push {r4-r8, lr}
 		ldr r4, [sp, #24]	@; Accedemos al valor 24 bytes a partir de la pila sp ( 5 regs * 4 bytes + 4 bytes de este quinto registro) = 24 bytes
-		sub r0, #1				@; restamos uno para que la matriz no coma parte de la ventana de la derecha
 
 		@; Calculo de la posicion inicial de columna de la ventana
 		mov r5, #PPART
@@ -340,6 +339,7 @@ _gg_escribirMat:
 				
 				cmp r7, #0				@; si null
 				beq .LseguentPos
+
 				sub r7, #32				@; ajustar codigo ASCII
 				add r7, r3				@; ajustar color al caracter
 				strh r7, [r6]			@; escribir en la posicion (direccion mapa)
